@@ -1,13 +1,13 @@
 {
-  "_nota": "Data bukan rahsia sahaja. TIADA URL Apps Script, Spreadsheet ID atau secret di sini (TRD 6). Sumber: BSD 3.1 Modules + TRD 4 struktur repo + DBD 3 warna ikon.",
+  "_nota": "Data bukan rahsia sahaja. TIADA URL Apps Script, Spreadsheet ID atau secret di sini (TRD 6). Sumber: BSD 3.1 Modules + TRD 4 struktur repo + DBD 3 warna ikon + DBD 7 ikon Lucide.",
   "modules": [
-    { "module_id": "hr",          "dir": "draftmohonkerja",  "nama": "Draft Mohon Kerja", "path": "/draftmohonkerja/",  "ikon": "user-plus",       "warna": "#1D6FD8", "subtajuk": "HR Only",            "susunan": 1, "status": "belum_live" },
+    { "module_id": "hr",          "dir": "draftmohonkerja",  "nama": "Draft Mohon Kerja", "path": "/draftmohonkerja/",  "ikon": "briefcase",       "warna": "#1D6FD8", "subtajuk": "HR Only",            "susunan": 1, "status": "belum_live" },
     { "module_id": "costcalc",    "dir": "costcalculator",   "nama": "Cost Calculator",   "path": "/costcalculator/",   "ikon": "calculator",      "warna": "#15803D", "subtajuk": "Commercial & PSS",   "susunan": 2, "status": "belum_live" },
-    { "module_id": "gwr",         "dir": "gwr",              "nama": "GWR",               "path": "/gwr/",              "ikon": "clipboard-check", "warna": "#1D4ED8", "subtajuk": "OMP & PSS",          "susunan": 3, "status": "belum_live" },
-    { "module_id": "ams",         "dir": "ams",              "nama": "AMS",               "path": "/ams/",              "ikon": "package",         "warna": "#15803D", "subtajuk": "Asset Management",   "susunan": 4, "status": "belum_live" },
+    { "module_id": "gwr",         "dir": "gwr",              "nama": "GWR",               "path": "/gwr/",              "ikon": "hard-hat", "warna": "#1D4ED8", "subtajuk": "OMP & PSS",          "susunan": 3, "status": "belum_live" },
+    { "module_id": "ams",         "dir": "ams",              "nama": "AMS",               "path": "/ams/",              "ikon": "shield-check",         "warna": "#15803D", "subtajuk": "Asset Management",   "susunan": 4, "status": "belum_live" },
     { "module_id": "claimpro",    "dir": "claimpro",         "nama": "ClaimPro",          "path": "/claimpro/",         "ikon": "receipt",         "warna": "#1D6FD8", "subtajuk": "All Staff",          "susunan": 5, "status": "belum_live" },
-    { "module_id": "compliance",  "dir": "compliance-track", "nama": "Compliance Track",  "path": "/compliance-track/", "ikon": "shield-check",    "warna": "#B45309", "subtajuk": "HR & PSS",           "susunan": 6, "status": "belum_live" },
-    { "module_id": "claimreport", "dir": "claimreport",      "nama": "ClaimReport",       "path": "/claimreport/",      "ikon": "file-text",       "warna": "#1D4ED8", "subtajuk": "Strategic Planning", "susunan": 7, "status": "belum_live" },
+    { "module_id": "compliance",  "dir": "compliance-track", "nama": "Compliance Track",  "path": "/compliance-track/", "ikon": "badge-check",    "warna": "#B45309", "subtajuk": "HR & PSS",           "susunan": 6, "status": "belum_live" },
+    { "module_id": "claimreport", "dir": "claimreport",      "nama": "ClaimReport",       "path": "/claimreport/",      "ikon": "chart-column",       "warna": "#1D4ED8", "subtajuk": "Strategic Planning", "susunan": 7, "status": "belum_live" },
     { "module_id": "voltrack",    "dir": "voltrack",         "nama": "Voltrack",          "path": "/voltrack/",         "ikon": "trending-up",     "warna": "#0F766E", "subtajuk": "Project Tracking",   "susunan": 8, "status": "belum_live" }
   ]
 }

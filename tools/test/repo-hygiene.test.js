@@ -69,3 +69,30 @@ test('config/modules.json: dir wujud di apps/ dan path = /<dir>/', () => {
     assert.match(m.warna, /^#[0-9A-F]{6}$/);
   }
 });
+
+test('salinan shared/gas dalam setiap projek gas sama dengan sumber (jalankan tools/sync-shared-gas.sh)', () => {
+  const shared = fs.readdirSync(path.join(ROOT, 'shared', 'gas')).filter((f) => f.endsWith('.gs'));
+  for (const app of fs.readdirSync(path.join(ROOT, 'apps'))) {
+    const dir = path.join(ROOT, 'apps', app, 'gas');
+    if (!fs.existsSync(path.join(dir, 'appsscript.json'))) continue;
+    for (const f of shared) {
+      const a = fs.readFileSync(path.join(ROOT, 'shared', 'gas', f), 'utf8');
+      const b = fs.existsSync(path.join(dir, f)) ? fs.readFileSync(path.join(dir, f), 'utf8') : '';
+      assert.equal(b, a, `apps/${app}/gas/${f} tak sama dengan shared/gas/${f}`);
+    }
+  }
+});
+
+test('tiada fungsi global Apps Script ditakrif dua kali dalam satu projek', () => {
+  for (const app of fs.readdirSync(path.join(ROOT, 'apps'))) {
+    const dir = path.join(ROOT, 'apps', app, 'gas');
+    if (!fs.existsSync(path.join(dir, 'appsscript.json'))) continue;
+    const seen = {};
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.gs'))) {
+      for (const m of fs.readFileSync(path.join(dir, f), 'utf8').matchAll(/^function\s+([A-Za-z0-9_]+)\s*\(/gm)) {
+        assert.ok(!seen[m[1]], `${app}: fungsi ${m[1]} dalam ${seen[m[1]]} dan ${f}`);
+        seen[m[1]] = f;
+      }
+    }
+  }
+});

@@ -5,6 +5,17 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const nodeCrypto = require('node:crypto');
+
+const toJavaBytes = (buf) => Array.from(buf, (b) => (b > 127 ? b - 256 : b));
+
+function formatDate(d, _tz, pattern) {
+  // Tiru Asia/Kuala_Lumpur (+08:00)
+  const iso = new Date(d.getTime() + 8 * 3600 * 1000).toISOString();
+  if (pattern === 'yyyy-MM-dd') return iso.slice(0, 10);
+  if (pattern === 'yyyy') return iso.slice(0, 4);
+  return iso.slice(0, 19) + '+08:00';
+}
 
 class MockRange {
   constructor(sheet, row, col, nr, nc) {
@@ -34,6 +45,7 @@ class MockRange {
     return this;
   }
   setFontWeight() { return this; }
+  setNumberFormat(f) { this.sheet.formats.push({ col: this.col, row: this.row, f }); return this; }
   setBackground() { return this; }
   setDataValidation(rule) {
     this.sheet.validations.push({ col: this.col, row: this.row, nr: this.nr, rule });
@@ -47,6 +59,7 @@ class MockSheet {
     this.data = [];
     this.frozen = 0;
     this.validations = [];
+    this.formats = [];
   }
   getName() { return this.name; }
   getLastRow() {
@@ -91,6 +104,8 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
   const triggers = [];
   const mails = [];
   const logs = [];
+  const cacheStore = new Map();
+  const counters = { openById: 0 };
 
   const ctx = {
     console,
@@ -103,6 +118,7 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
     },
     SpreadsheetApp: {
       openById: (id) => {
+        counters.openById++;
         if (id !== store.SPREADSHEET_ID) throw new Error('Spreadsheet tak dijumpai: ' + id);
         return spreadsheet;
       },
@@ -139,12 +155,28 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
     },
     Session: { getEffectiveUser: () => ({ getEmail: () => userEmail }) },
     Utilities: {
-      formatDate: (d) => d.toISOString().replace('Z', '+00:00'),
+      formatDate,
+      DigestAlgorithm: { SHA_256: 'sha256' },
+      Charset: { UTF_8: 'utf8' },
+      computeDigest: (alg, text) => toJavaBytes(nodeCrypto.createHash(alg).update(String(text), 'utf8').digest()),
+      computeHmacSha256Signature: (value, key) =>
+        toJavaBytes(nodeCrypto.createHmac('sha256', Buffer.from(String(key), 'utf8')).update(String(value), 'utf8').digest()),
+    },
+    CacheService: {
+      getScriptCache: () => ({
+        get: (k) => (cacheStore.has(k) ? cacheStore.get(k) : null),
+        put: (k, v) => { cacheStore.set(k, String(v)); },
+      }),
+    },
+    LockService: { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) },
+    ContentService: {
+      MimeType: { JSON: 'application/json' },
+      createTextOutput: (text) => ({ text, setMimeType() { return this; }, getContent() { return this.text; } }),
     },
     MailApp: { sendEmail: (m) => mails.push(m) },
   };
   vm.createContext(ctx);
-  return { ctx, store, spreadsheet, triggers, mails, logs };
+  return { ctx, store, spreadsheet, triggers, mails, logs, cacheStore, counters };
 }
 
 function loadGas(gas, dir) {

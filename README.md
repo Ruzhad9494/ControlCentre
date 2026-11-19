@@ -10,7 +10,8 @@ Reka bentuk penuh dalam [`docs/`](docs/): PRD, TRD, AFD, DBD, BSD, IPD. Pelan pe
 |---|---|
 | 0A Tutup kebocoran sistem lama | Manual oleh pemilik (dalam sistem lama) |
 | 0 Setup repo, Cloudflare, OAuth, VP-Access | Kod siap. Langkah manual: [`docs/setup-fasa0.md`](docs/setup-fasa0.md) |
-| 1 Portal teras | Belum mula |
+| 1 Portal teras | Kod siap (login, sesi, gateway API, dashboard, admin, PWA). Langkah manual: [`docs/setup-fasa1.md`](docs/setup-fasa1.md) |
+| 2A-2H Modul | Belum mula |
 
 ## Struktur
 
@@ -33,7 +34,13 @@ bash tools/build.sh
 ```
 
 ```bash
-node --test tools/test/*.test.js
+node --test tools/test/*.test.js tools/test/*.test.mjs
+```
+
+Selepas edit `shared/gas/*.gs`, salin ke setiap projek Apps Script:
+
+```bash
+bash tools/sync-shared-gas.sh
 ```
 
 ## Peraturan

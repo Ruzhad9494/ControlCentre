@@ -54,6 +54,7 @@ function setupSystem() {
     report.push(name + (created ? ' (baru)' : '') + (missing.length && !created ? ' +' + missing.join(',') : '') + (seeded ? ' seed=' + seeded : ''));
   });
 
+  formatTextColumns_(ss);
   ensureCounters_(ss);
   ensureFolders_();
   ensureTriggers_();
@@ -66,6 +67,16 @@ function setupSystem() {
   }
   Logger.log('setupSystem selesai: ' + ss.getName() + ' | ' + report.join(' | '));
   return report;
+}
+
+/** google_sub ialah nombor panjang; format teks supaya Sheets tak tukar ke 1.2E+20. */
+function formatTextColumns_(ss) {
+  var sh = ss.getSheetByName('Staff');
+  var header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  ['google_sub', 'staff_id'].forEach(function (f) {
+    var col = header.indexOf(f) + 1;
+    if (col) sh.getRange(2, col, Math.max(sh.getMaxRows() - 1, 1), 1).setNumberFormat('@');
+  });
 }
 
 /** access belum guna ID berjujukan; tab _Counters disediakan untuk konsistensi corak. */

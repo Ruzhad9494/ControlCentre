@@ -42,4 +42,4 @@ jobs:
       - name: Build output
         run: bash tools/build.sh
       - name: Ujian
-        run: node --test tools/test/*.test.js
+        run: node --test tools/test/*.test.js tools/test/*.test.mjs
