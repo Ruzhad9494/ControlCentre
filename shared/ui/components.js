@@ -140,6 +140,27 @@ export function renderHeader(me, crumb = 'Dashboard') {
   return header;
 }
 
+/**
+ * Navigasi dalam modul: tab di desktop, bottom nav di telefon (maks 4 item, DBD 6).
+ * items: [{ href: '#/senarai', label: 'Simpanan', ikon: 'scroll-text', match: (hash) => bool }]
+ */
+export function renderModuleNav(host, items) {
+  document.body.classList.add('has-bottom-nav');
+  const nav = el('nav', { class: 'module-nav', 'aria-label': 'Menu modul' });
+  const draw = () => {
+    const h = location.hash || '#/';
+    clear(nav);
+    for (const it of items) {
+      const active = it.match ? it.match(h) : h === it.href;
+      nav.appendChild(el('a', { href: it.href, 'aria-current': active ? 'page' : null }, icon(it.ikon), el('span', null, it.label)));
+    }
+  };
+  window.addEventListener('hashchange', draw);
+  draw();
+  host.prepend(nav);
+  return nav;
+}
+
 /** Daftar service worker (F-04). Gagal secara senyap jika tak disokong. */
 export function registerSW() {
   if ('serviceWorker' in navigator) {

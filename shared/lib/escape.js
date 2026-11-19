@@ -44,10 +44,13 @@ export function setText(node, value) {
   return node;
 }
 
-/** Halang javascript:/data: dalam href/src. Laluan relatif & http(s)/mailto/tel dibenarkan. */
+/**
+ * Halang javascript:/data: dalam href/src. Laluan relatif, http(s), mailto, tel dan
+ * blob: (URL tempatan yang dijana browser sendiri, contoh gambar canvas) dibenarkan.
+ */
 export function safeUrl(v) {
   const s = String(v).trim();
-  if (/^(https?:|mailto:|tel:|\/|#|\.|\?)/i.test(s) || !/^[a-z][a-z0-9+.-]*:/i.test(s)) return s;
+  if (/^(https?:|mailto:|tel:|blob:|\/|#|\.|\?)/i.test(s) || !/^[a-z][a-z0-9+.-]*:/i.test(s)) return s;
   return '#';
 }
 

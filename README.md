@@ -11,7 +11,8 @@ Reka bentuk penuh dalam [`docs/`](docs/): PRD, TRD, AFD, DBD, BSD, IPD. Pelan pe
 | 0A Tutup kebocoran sistem lama | Manual oleh pemilik (dalam sistem lama) |
 | 0 Setup repo, Cloudflare, OAuth, VP-Access | Kod siap. Langkah manual: [`docs/setup-fasa0.md`](docs/setup-fasa0.md) |
 | 1 Portal teras | Kod siap (login, sesi, gateway API, dashboard, admin, PWA). Langkah manual: [`docs/setup-fasa1.md`](docs/setup-fasa1.md) |
-| 2A-2H Modul | Belum mula |
+| 2A Cost Calculator | Kod siap. Langkah manual: [`docs/setup-fasa2a.md`](docs/setup-fasa2a.md) |
+| 2B-2H Modul | Belum mula |
 
 ## Struktur
 

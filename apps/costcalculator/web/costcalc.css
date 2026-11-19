@@ -1,0 +1,30 @@
+/* Cost Calculator - tambahan kecil atas shared/ui/voltake.css */
+.cc-layout { display: grid; gap: var(--sp-5); grid-template-columns: minmax(0, 1fr); align-items: start; }
+.cc-layout > *, .cc-grid > * { min-width: 0; }
+@media (min-width: 1024px) { .cc-layout { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); } .cc-preview { position: sticky; top: calc(var(--header-h) + 16px); } }
+.cc-section h3 { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-4); padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border); }
+.cc-section h3 .step { width: 24px; height: 24px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; }
+.cc-grid { display: grid; gap: var(--sp-3); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.cc-grid .full { grid-column: 1 / -1; }
+.cc-rates { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.cc-rate { background: var(--mist); border-radius: var(--radius-ctl); padding: var(--sp-2) var(--sp-3); }
+.cc-rate .v { font-variant-numeric: tabular-nums; font-weight: 700; }
+.subkon-row { display: flex; gap: var(--sp-2); align-items: flex-end; }
+.subkon-row .field { flex: 1; }
+.cc-canvas-wrap { background: #E5E9EF; border-radius: var(--radius-card); padding: var(--sp-3); }
+.cc-canvas-wrap canvas { width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: var(--shadow-card); background: #fff; }
+.cc-kpis { display: grid; gap: var(--sp-3); grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 479px) { .cc-kpis { grid-template-columns: 1fr 1fr; } }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); }
+.kpi .label { font-size: 13px; color: var(--muted); }
+.kpi .v { font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kpi.pos { border-left-color: var(--success); } .kpi.pos .v { color: var(--success); }
+.kpi.neg { border-left-color: var(--danger); } .kpi.neg .v { color: var(--danger); }
+.seg { display: inline-flex; background: var(--mist); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: 3px; }
+.seg button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 6px; background: none; font: 600 13px var(--font); color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--navy); box-shadow: 0 1px 2px rgba(15,23,42,.1); }
+.cc-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+@media (max-width: 479px) { .cc-actions .btn { flex: 1 1 auto; } }
+.money-pos { color: var(--success); font-weight: 600; }
+.money-neg { color: var(--danger); font-weight: 600; }
+.share-img { max-width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--border); }
