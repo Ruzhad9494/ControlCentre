@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0B2545">
+  <title>Install app - Voltake</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Voltake">
+  <link rel="stylesheet" href="/shared/ui/voltake.css">
+  <script type="module" src="/assets/install.js"></script>
+</head>
+<body>
+  <main class="container page stack" id="main">
+    <h2>Install Voltake di telefon atau komputer</h2>
+    <p class="muted">Selepas install, buka Voltake terus dari ikon macam app biasa. Anda perlu log masuk sekali di dalam app.</p>
+    <div id="install-now" hidden class="card row-between">
+      <span>Peranti ini boleh install terus.</span>
+      <button class="btn" type="button" id="btn-install">Install sekarang</button>
+    </div>
+    <div id="installed" hidden class="alert alert-info">Anda sedang guna app yang dah di-install.</div>
+    <div id="guides" class="stack"></div>
+  </main>
+</body>
+</html>

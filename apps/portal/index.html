@@ -6,21 +6,19 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#0B2545">
   <title>Voltake Operations Portal</title>
-  <link rel="stylesheet" href="/assets/coming-soon.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Voltake">
+  <link rel="stylesheet" href="/shared/ui/voltake.css">
+  <script type="module" src="/assets/dashboard.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <span class="brand">VOLTAKE <span class="brand-sub">ENERGY</span></span>
-  </header>
-  <main class="wrap">
-    <section class="card" aria-labelledby="tajuk">
-      <span class="badge">Coming soon</span>
-      <h1 id="tajuk">Voltake Operations Portal</h1>
-      <p>Portal operasi Voltake sedang dibina. Satu login Google untuk semua sistem: ClaimPro, GWR, AMS, Compliance Track dan lain-lain.</p>
-      <p class="muted">Sementara itu, teruskan guna sistem sedia ada. Pautan baharu akan diumumkan kepada semua staf.</p>
-    </section>
+  <main class="container page" id="main" aria-busy="true">
+    <div class="skeleton" style="height:140px"></div>
   </main>
-  <footer class="foot">&copy; <span id="yr">2026</span> Voltake Energy</footer>
-  <script src="/assets/year.js"></script>
+  <noscript><p class="container">Portal ini perlukan JavaScript.</p></noscript>
 </body>
 </html>

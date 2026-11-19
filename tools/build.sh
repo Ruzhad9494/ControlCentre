@@ -49,8 +49,9 @@ for p in "$ROOT"/public-pages/*/; do
   copy_dir "$p" "$OUT/public/$name"
 done
 
-# 5. Fail root Cloudflare / PWA (jika wujud)
-for f in _headers _redirects manifest.webmanifest sw.js robots.txt; do
+# 5. Fail root Cloudflare / PWA (jika wujud). _routes.json hadkan Functions ke /auth, /api, /public/api
+#    supaya fail statik tak guna kuota 100,000 request Functions sehari.
+for f in _headers _redirects _routes.json manifest.webmanifest sw.js robots.txt; do
   [ -f "$ROOT/$f" ] && cp "$ROOT/$f" "$OUT/$f"
 done
 

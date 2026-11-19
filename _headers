@@ -1,0 +1,30 @@
+# Cloudflare Pages _headers (TRD 6; IPD 1.13). Untuk fail statik sahaja;
+# respons Functions (/auth, /api) set header sendiri dalam functions/_lib/util.js.
+#
+# CSP ikut TRD 6, dengan tambahan yang Google Identity Services perlukan
+# (dokumentasi GIS: connect-src dan frame-src accounts.google.com/gsi/),
+# form-action untuk redirect login, dan font-src 'self' (Inter dihos sendiri).
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client https://challenges.cloudflare.com; frame-src https://accounts.google.com https://challenges.cloudflare.com; connect-src 'self' https://accounts.google.com/gsi/; img-src 'self' data: blob: https://lh3.googleusercontent.com; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; frame-ancestors 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), geolocation=(), microphone=(), payment=(), usb=()
+  X-Frame-Options: DENY
+  Strict-Transport-Security: max-age=31536000
+
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache
+
+/*.html
+  Cache-Control: no-cache
+
+/
+  Cache-Control: no-cache
+
+/shared/ui/fonts/*
+  Cache-Control: public, max-age=31536000, immutable

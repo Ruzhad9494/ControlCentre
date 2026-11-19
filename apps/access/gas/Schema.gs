@@ -46,13 +46,13 @@ var VALIDATIONS = [
 // Semua bermula `belum_live`; tukar ke `aktif` semasa go-live setiap modul (IPD 2.x.7).
 var MODULE_SEED = [
   // module_id,     nama,                path,                  ikon,              subtajuk,             roles_sah,                                          susunan
-  ['hr',          'Draft Mohon Kerja', '/draftmohonkerja/',  'user-plus',       'HR Only',            'hr_admin,interviewer',                              1],
+  ['hr',          'Draft Mohon Kerja', '/draftmohonkerja/',  'briefcase',       'HR Only',            'hr_admin,interviewer',                              1],
   ['costcalc',    'Cost Calculator',   '/costcalculator/',   'calculator',      'Commercial & PSS',   'user,admin',                                        2],
-  ['gwr',         'GWR',               '/gwr/',              'clipboard-check', 'OMP & PSS',          'manager,supervisor,engineer,chargeman,technician',  3],
-  ['ams',         'AMS',               '/ams/',              'package',         'Asset Management',   'admin,auditor,staff',                               4],
+  ['gwr',         'GWR',               '/gwr/',              'hard-hat', 'OMP & PSS',          'manager,supervisor,engineer,chargeman,technician',  3],
+  ['ams',         'AMS',               '/ams/',              'shield-check',         'Asset Management',   'admin,auditor,staff',                               4],
   ['claimpro',    'ClaimPro',          '/claimpro/',         'receipt',         'All Staff',          'staff,admin',                                       5],
-  ['compliance',  'Compliance Track',  '/compliance-track/', 'shield-check',    'HR & PSS',           'hr_admin,pss,staff_self',                           6],
-  ['claimreport', 'ClaimReport',       '/claimreport/',      'file-text',       'Strategic Planning', 'user,admin',                                        7],
+  ['compliance',  'Compliance Track',  '/compliance-track/', 'badge-check',    'HR & PSS',           'hr_admin,pss,staff_self',                           6],
+  ['claimreport', 'ClaimReport',       '/claimreport/',      'chart-column',       'Strategic Planning', 'user,admin',                                        7],
   ['voltrack',    'Voltrack',          '/voltrack/',         'trending-up',     'Project Tracking',   'admin,commercial,operation,claim,lod',              8]
 ];
 

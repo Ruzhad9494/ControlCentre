@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0B2545">
+  <title>Log masuk - Voltake</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Voltake">
+  <link rel="stylesheet" href="/shared/ui/voltake.css">
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <script type="module" src="/assets/login.js"></script>
+</head>
+<body class="center-page">
+  <main>
+    <div class="center-card">
+      <div class="logo"><span class="logo-mark" aria-hidden="true">V</span><span>VOLTAKE</span></div>
+      <section class="card stack" aria-labelledby="tajuk">
+        <div>
+          <h1 id="tajuk">Log masuk</h1>
+          <p class="muted">Voltake Operations Portal. Satu login untuk semua sistem.</p>
+        </div>
+        <div id="msg" role="alert" hidden></div>
+        <div class="gsi-slot" id="gsi"><div class="skeleton" style="width:260px;height:44px"></div></div>
+        <p class="caption" style="text-align:center">Guna akaun @voltake.com anda, atau Gmail yang didaftar dengan HR.</p>
+        <details>
+          <summary class="caption">Notis privasi</summary>
+          <div id="privacy" style="margin-top:12px"></div>
+        </details>
+      </section>
+      <p class="foot"><a href="/install/">Cara install app di telefon</a></p>
+    </div>
+  </main>
+</body>
+</html>
