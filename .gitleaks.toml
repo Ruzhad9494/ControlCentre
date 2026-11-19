@@ -1,0 +1,44 @@
+# Konfigurasi gitleaks untuk Voltake Operations Portal.
+# Guna peraturan lalai gitleaks + peraturan khas di bawah untuk perkara
+# yang TRD seksyen 6 larang masuk repo.
+
+title = "voltake-portal"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "apps-script-web-app-url"
+description = "URL deployment Apps Script (mesti dalam env Cloudflare sahaja)"
+regex = '''script\.google\.com/macros/s/[A-Za-z0-9_-]{20,}'''
+tags = ["voltake", "url"]
+
+[[rules]]
+id = "google-spreadsheet-id"
+description = "Spreadsheet ID (mesti dalam Script Properties sahaja)"
+regex = '''docs\.google\.com/spreadsheets/d/[A-Za-z0-9_-]{25,}'''
+tags = ["voltake", "id"]
+
+[[rules]]
+id = "google-drive-folder-id"
+description = "Folder ID Drive (mesti dalam Script Properties sahaja)"
+regex = '''drive\.google\.com/drive/(u/\d+/)?folders/[A-Za-z0-9_-]{20,}'''
+tags = ["voltake", "id"]
+
+[[rules]]
+id = "google-oauth-client-secret"
+description = "Google OAuth client secret"
+regex = '''GOCSPX-[A-Za-z0-9_-]{20,}'''
+tags = ["voltake", "secret"]
+
+[[rules]]
+id = "voltake-secret-assignment"
+description = "Nilai secret ditulis terus dalam kod"
+regex = '''(?i)(SESSION_SECRET|ACCESS_SECRET|MODULE_SECRET(_[A-Z_]+)?|TURNSTILE_SECRET)\s*[:=]\s*['"][A-Za-z0-9+/=_-]{16,}['"]'''
+tags = ["voltake", "secret"]
+
+[allowlist]
+description = "Dokumen reka bentuk sebut nama pemboleh ubah, bukan nilai"
+paths = [
+  '''docs/.*\.md''',
+]

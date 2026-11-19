@@ -1,0 +1,12 @@
+# Cloudflare Pages _redirects (IPD task 0.4)
+#
+# Pemetaan laluan dibuat oleh tools/build.sh (salin ke dist/), bukan di sini:
+#   apps/portal/          -> /
+#   apps/<modul>/web/     -> /<modul>/        (contoh apps/claimpro/web -> /claimpro/)
+#   public-pages/<x>/     -> /public/<x>/
+#   shared/ui, shared/lib -> /shared/ui, /shared/lib
+#
+# Kod Apps Script (apps/*/gas), docs/, config/, tools/ TIDAK disalin ke dist,
+# jadi tak boleh dicapai dari web.
+#
+# Tambah peraturan redirect di bawah bila perlu, format: /dari /ke 301
