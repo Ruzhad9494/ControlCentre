@@ -1,0 +1,19 @@
+# Secret & kredential (TRD 6) - jangan sesekali commit
+.clasprc.json
+.clasp.json
+.env
+.env*
+!.env.example
+*.key
+*.pem
+.dev.vars
+
+# Output build Cloudflare Pages (dijana oleh tools/build.sh)
+dist/
+
+# Alat tempatan
+node_modules/
+.wrangler/
+.DS_Store
+Thumbs.db
+*.log
