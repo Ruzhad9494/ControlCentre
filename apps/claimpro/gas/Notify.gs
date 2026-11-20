@@ -68,6 +68,15 @@ function notifyStaffPaid_(ss, claims) {
     '\n\nSila semak akaun bank anda. Jika dah terima, sahkan setiap tuntutan di: ' + portalLink_(s, '#/') + MAIL_FOOT);
 }
 
+/** Admin/Head of HR ubah atau padam tuntutan staf (sistem lama benarkan; sistem baharu wajib sebab + maklum staf). */
+function notifyStaffAdminChange_(ss, claim, by, apa, sebab, diff) {
+  var s = settingsMap_(ss);
+  mail_(claim.staff_email,
+    '[Voltake ClaimPro] Tuntutan ' + claim.claim_id + ' ' + apa + ' oleh HR',
+    'Tuntutan ' + textVal_(claim.jenis) + ' RM ' + Number(claim.amaun_rm).toFixed(2) + ' anda telah ' + apa + ' oleh ' + (by.nama || 'Admin HR') + '.\nSebab: ' + sebab +
+    (diff ? '\nPerubahan: ' + diff : '') + '\n\n' + (apa === 'dipadam' ? 'Hubungi HR jika ada pertanyaan.' : 'Lihat di: ' + portalLink_(s, '#/c/' + encodeURIComponent(claim.claim_id))) + MAIL_FOOT);
+}
+
 function notifyBeza_(ss, claim) {
   var s = settingsMap_(ss);
   mail_(s.admin_notify_emails,

@@ -117,7 +117,7 @@ test('Fail: magic bytes disahkan (EXE bernama .jpg ditolak), 10MB, HEIC & PDF di
   assert.equal(gas.drive.files.size, 2, 'tiada fail tertinggal dari percubaan ditolak');
 });
 
-test('Draf: simpan, tambah resit, buang resit tertentu (fail dibuang dari Drive), hantar; Dihantar tak boleh diubah; padam draf', async () => {
+test('Draf: simpan, tambah resit, buang resit tertentu (fail dibuang dari Drive), hantar; padam draf', async () => {
   const gas = setupClaimProGas();
   const d = ok(await call(gas, U.ali, 'saveClaim', FORM));
   assert.equal(d.status, 'Draf');
@@ -132,12 +132,107 @@ test('Draf: simpan, tambah resit, buang resit tertentu (fail dibuang dari Drive)
   const sent = ok(await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: d.claim_id, resit: undefined, hantar: true }));
   assert.equal(sent.status, 'Dihantar');
   assert.ok(sent.ada_resit, 'resit sedia ada kekal bila tak diganti');
-  assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: d.claim_id, amaun_rm: 1 })).status, 409);
-  assert.equal((await call(gas, U.ali, 'deleteClaim', { claim_id: d.claim_id })).status, 409);
   const d3 = ok(await call(gas, U.ali, 'saveClaim', FORM));
   ok(await call(gas, U.ali, 'deleteClaim', { claim_id: d3.claim_id }));
   assert.equal((await call(gas, U.ali, 'listMyClaims', {})).data.length, 1);
   assert.equal(gas.spreadsheet.getSheetByName('Claims').rows().find((r) => r.claim_id === d3.claim_id).deleted, 'TRUE');
+});
+
+test('Cara lama: staf boleh betulkan/padam tuntutan Dihantar dan Ditolak; dikunci selepas Lulus', async () => {
+  const gas = setupClaimProGas();
+  const id = await submitted(gas);
+  const mails = gas.mails.length;
+  const e = ok(await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: id, amaun_rm: 40, resit: undefined, hantar: false }));
+  assert.equal(e.status, 'Dihantar', 'dibetulkan sebelum kelulusan: kekal Dihantar');
+  assert.equal(e.amaun_rm, 40);
+  assert.equal(e.boleh_ubah, true);
+  assert.equal(gas.mails.length, mails, 'tiada emel berulang kepada admin');
+  const sej = ok(await call(gas, U.ali, 'getClaim', { claim_id: id })).sejarah.at(-1);
+  assert.equal(`${sej.dari}>${sej.ke}`, 'Dihantar>Dihantar');
+  assert.match(sej.catatan, /amaun 48\.50 -> 40\.00/);
+  // resit wajib kekal walaupun Dihantar
+  assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: id, resit: undefined, buang_resit: true })).status, 400);
+
+  // Ditolak -> dibetulkan -> hantar semula; kelulusan lama dikosongkan
+  ok(await call(gas, U.hr, 'decideClaim', { claim_id: id, keputusan: 'Ditolak', sebab: 'Resit tak jelas' }));
+  const back = ok(await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: id, resit: { data: PDF_B64 }, hantar: true }));
+  assert.equal(back.status, 'Dihantar');
+  assert.equal(back.sebab_tolak, '');
+  assert.equal(back.approved_by_name, '');
+  assert.match(gas.mails.at(-1).subject, /menunggu kelulusan/);
+  assert.ok(gas.spreadsheet.getSheetByName('AuditLog').rows().some((a) => a.tindakan === 'RESUBMIT'));
+
+  // Ditolak -> simpan sebagai draf
+  ok(await call(gas, U.hr, 'decideClaim', { claim_id: id, keputusan: 'Ditolak', sebab: 'Salah jenis' }));
+  assert.equal(ok(await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: id, resit: undefined })).status, 'Draf');
+
+  // Padam tuntutan Dihantar: resit ke tong sampah
+  const id2 = await submitted(gas);
+  const f2 = gas.spreadsheet.getSheetByName('Claims').rows().find((r) => r.claim_id === id2).receipt_file_id;
+  ok(await call(gas, U.ali, 'deleteClaim', { claim_id: id2 }));
+  assert.equal(gas.drive.files.get(f2).trashed, true);
+  assert.match(gas.spreadsheet.getSheetByName('Claims').rows().find((r) => r.claim_id === id2).deleted_reason, /status Dihantar/);
+
+  // Selepas Lulus: staf tak boleh ubah/padam
+  const id3 = await submitted(gas);
+  ok(await call(gas, U.hr, 'decideClaim', { claim_id: id3, keputusan: 'Lulus' }));
+  const l = ok(await call(gas, U.ali, 'getClaim', { claim_id: id3 }));
+  assert.equal(l.boleh_ubah, false);
+  assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: id3, amaun_rm: 1 })).status, 409);
+  assert.equal((await call(gas, U.ali, 'deleteClaim', { claim_id: id3 })).status, 409);
+});
+
+test('Cara lama: Admin HR / Head of HR boleh ubah & padam tuntutan staf (apa-apa status) dengan sebab; ikut peraturan pelulus', async () => {
+  const gas = setupClaimProGas();
+  const id = await submitted(gas, U.ali);
+  ok(await call(gas, U.hr, 'decideClaim', { claim_id: id, keputusan: 'Lulus' }));
+  const asHr = ok(await call(gas, U.hr, 'getClaim', { claim_id: id }));
+  assert.equal(asHr.boleh_ubah, true);
+  assert.equal(asHr.ubah_sebagai_admin, true);
+  assert.equal((await call(gas, U.hr, 'saveClaim', { ...FORM, claim_id: id, amaun_rm: 45, resit: undefined })).status, 400, 'sebab wajib');
+  const e = ok(await call(gas, U.hr, 'saveClaim', { ...FORM, claim_id: id, amaun_rm: 45, resit: undefined, hantar: true, sebab_ubah: 'Staf tersilap taip amaun' }));
+  assert.equal(e.status, 'Lulus', 'status kekal');
+  assert.equal(e.amaun_rm, 45);
+  assert.equal(e.staff_name, 'Ali Technician', 'identiti staf kekal (bukan nama admin)');
+  const row = gas.spreadsheet.getSheetByName('Claims').rows().find((r) => r.claim_id === id);
+  assert.equal(row.staff_email, 'ali@gmail.com');
+  assert.equal(gas.mails.at(-1).to, 'ali@gmail.com');
+  assert.match(gas.mails.at(-1).body, /Staf tersilap taip amaun/);
+  assert.match(gas.mails.at(-1).body, /amaun 48\.50 -> 45\.00/);
+  assert.ok(gas.spreadsheet.getSheetByName('AuditLog').rows().some((a) => a.tindakan === 'ADMIN_EDIT' && a.email === 'hr@voltake.com'));
+
+  // Bayaran syarikat RM45 direkod -> amaun tak boleh diturunkan bawah jumlah dibayar
+  ok(await call(gas, U.hr, 'recordPayment', { claim_id: id, bukti: { data: PDF_B64 } }));
+  assert.equal((await call(gas, U.hr, 'saveClaim', { ...FORM, claim_id: id, amaun_rm: 30, resit: undefined, sebab_ubah: 'cuba turun' })).status, 400);
+
+  // Dibayar: admin ubah amaun -> beza_bayaran dikira semula
+  ok(await call(gas, U.ali, 'confirmReceived', { claim_id: id, received_date: today(), received_amount_rm: 45 }));
+  const paid = ok(await call(gas, U.hr, 'saveClaim', { ...FORM, claim_id: id, amaun_rm: 50, resit: undefined, sebab_ubah: 'Pembetulan amaun' }));
+  assert.equal(paid.status, 'Dibayar');
+  assert.equal(paid.beza_bayaran, true);
+
+  // Peraturan pelulus: Admin HR tak boleh ubah/padam claim rakan HR; Head of HR boleh
+  const hrClaim = await submitted(gas, U.hr2);
+  assert.equal((await call(gas, U.hr, 'saveClaim', { ...FORM, claim_id: hrClaim, sebab_ubah: 'xxx' })).status, 403);
+  assert.equal((await call(gas, U.hr, 'deleteClaim', { claim_id: hrClaim, sebab: 'xxx' })).status, 403);
+  assert.equal(ok(await call(gas, U.head, 'getClaim', { claim_id: hrClaim })).ubah_sebagai_admin, true);
+  // Admin HR tak boleh ubah tuntutan sendiri selepas lulus (ikut peraturan pemilik)
+  const own = await submitted(gas, U.hr);
+  ok(await call(gas, U.head, 'decideClaim', { claim_id: own, keputusan: 'Lulus' }));
+  assert.equal((await call(gas, U.hr, 'saveClaim', { ...FORM, claim_id: own, amaun_rm: 999, sebab_ubah: 'naik' })).status, 409);
+  // Staf biasa tak boleh guna laluan admin
+  assert.equal((await call(gas, U.abu, 'deleteClaim', { claim_id: id, sebab: 'xxx' })).status, 403);
+
+  // Admin padam: sebab wajib, fail DISIMPAN (bukti), staf diemel
+  assert.equal((await call(gas, U.head, 'deleteClaim', { claim_id: id })).status, 400);
+  const fid = gas.spreadsheet.getSheetByName('Claims').rows().find((r) => r.claim_id === id).receipt_file_id;
+  ok(await call(gas, U.head, 'deleteClaim', { claim_id: id, sebab: 'Tuntutan berganda' }));
+  const del = gas.spreadsheet.getSheetByName('Claims').rows().find((r) => r.claim_id === id);
+  assert.equal(del.deleted, 'TRUE');
+  assert.match(del.deleted_reason, /Head HR: Tuntutan berganda/);
+  assert.equal(gas.drive.files.get(fid).trashed, false, 'resit disimpan sebagai bukti');
+  assert.match(gas.mails.at(-1).subject, /dipadam oleh HR/);
+  assert.equal((await call(gas, U.ali, 'listMyClaims', {})).data.length, 0);
 });
 
 test('Senarai saya: terbaru dahulu walaupun cap masa sama', async () => {
@@ -213,7 +308,7 @@ test('Senarai kelulusan memaparkan boleh_lulus dan sebab (satu sumber dengan kep
   assert.deepEqual(asHead.map((c) => c.boleh_lulus), [true, true], 'Head of HR boleh lulus kedua-duanya');
 });
 
-test('Tolak: sebab wajib, emel staf bawa sebab; staf nampak sebab; tak boleh diubah lagi', async () => {
+test('Tolak: sebab wajib, emel staf bawa sebab; staf nampak sebab; boleh dibetulkan', async () => {
   const gas = setupClaimProGas();
   const id = await submitted(gas);
   assert.equal((await call(gas, U.hr, 'decideClaim', { claim_id: id, keputusan: 'Ditolak' })).status, 400);
@@ -225,7 +320,7 @@ test('Tolak: sebab wajib, emel staf bawa sebab; staf nampak sebab; tak boleh diu
   assert.equal(mine.sebab_tolak, 'Resit tak jelas');
   assert.match(gas.mails.at(-1).body, /Resit tak jelas/);
   assert.deepEqual(mine.sejarah.map((h) => `${h.dari}>${h.ke}:${h.oleh}`), ['Draf>Dihantar:Ali Technician', 'Dihantar>Ditolak:Siti HR']);
-  assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: id })).status, 409);
+  assert.equal(mine.boleh_ubah, true, 'cara lama: staf boleh betulkan tuntutan ditolak');
 });
 
 test('Sahkan bayaran: claim staf lain 403; admin tak boleh tanda Dibayar; bukan status Lulus 409', async () => {
@@ -293,6 +388,10 @@ test('Senarai Lulus belum dibayar (HR), laporan ikut bulan/jenis/status, jumlah 
   assert.equal(ok(await call(gas, U.head, 'claimReport', { bulan: daysAgo(1).slice(0, 7) })).bilangan, 3);
   assert.equal(ok(await call(gas, U.head, 'claimReport', { bulan: '2020-01' })).bilangan, 0);
   assert.equal((await call(gas, U.head, 'claimReport', { bulan: 'Januari' })).status, 400);
+  assert.equal(ok(await call(gas, U.head, 'claimReport', { dari: daysAgo(1), hingga: today() })).bilangan, 3);
+  assert.equal(ok(await call(gas, U.head, 'claimReport', { dari: today() })).bilangan, 0);
+  assert.equal((await call(gas, U.head, 'claimReport', { dari: today(), hingga: daysAgo(3) })).status, 400);
+  assert.equal((await call(gas, U.head, 'claimReport', { dari: '2026-02-30' })).status, 400);
 });
 
 test('Jenis tuntutan: admin cipta/ubah; staf nampak yang aktif sahaja; nama tak sah ditolak', async () => {

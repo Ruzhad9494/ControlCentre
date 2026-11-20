@@ -351,7 +351,7 @@ C = cipta, R = baca, U = kemas kini, D = soft delete. "sendiri" = rekod `staff_e
 | VP-AMS.Assets, CalibrationLog | admin CRUD · auditor R · staff R (aset `Tersedia` sahaja) |
 | VP-AMS.Audits | auditor CRU · admin R |
 | VP-AMS.Movements | staff C (pinjam), R/U (sendiri: pulang) · admin CRU (lulus pulang) |
-| VP-ClaimPro.Claims | staff CRUD (sendiri, U/D hanya `Draf`) + U medan `received_*` (sendiri, `Lulus` → `Dibayar`) · admin R semua + U status (`Dihantar` → `Lulus`/`Ditolak`) kecuali tuntutan sendiri dan tuntutan staf HR · ketua seperti admin + boleh tuntutan sendiri dan staf HR; admin/ketua **tak boleh** tukar ke `Dibayar` |
+| VP-ClaimPro.Claims | staff CRUD (sendiri, U/D bila `Draf`, `Dihantar` atau `Ditolak`; dikunci selepas `Lulus`) + U medan `received_*` (sendiri, `Lulus` → `Dibayar`) · admin R semua + U status (`Dihantar` → `Lulus`/`Ditolak`) kecuali tuntutan sendiri dan tuntutan staf HR · ketua seperti admin + boleh tuntutan sendiri dan staf HR; admin/ketua juga U/D tuntutan staf lain pada apa-apa status (ikut peraturan pelulus yang sama, sebab wajib, status & identiti staf kekal, padam lembut dan fail disimpan); admin/ketua **tak boleh** tukar ke `Dibayar` |
 | VP-ClaimPro.ClaimTypes | admin CRU · lain R |
 | VP-Compliance.Vehicles, Chargeman | hr_admin CRUD · pss CRU · staff_self - |
 | VP-Compliance.StaffCerts | hr_admin CRUD · pss R · staff_self CRU (sendiri sahaja, `staff_email` = sesi) |

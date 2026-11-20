@@ -46,11 +46,16 @@ Sumber: `voltake-energy/claimpro` (`Appscript/Code.gs`, `index.html`), dibaca 20
 | ID `CLM-yyMMdd-HHmm-NAMA` | `CLM-YYYY-NNNNN` | BSD 1 (tiada nama dalam ID) |
 | Fail dalam folder ikut nama staf, pautan URL dalam Sheet | Folder `Receipts/YYYY-MM`, ID fail sahaja, dibuka melalui portal dengan semakan akses | TRD 6 Drive |
 
-### Perbezaan yang PERLU KEPUTUSAN pemilik
+### Diputuskan pemilik 20/11/2026: ikut cara lama
 
-| Lama | Baharu sekarang | Soalan |
+| Lama | Baharu | Kawalan tambahan |
 |---|---|---|
-| Staf boleh **ubah/padam** tuntutan sendiri selagi belum dibayar | Hanya Draf boleh diubah/dipadam; selepas Hantar dikunci | Perlukah staf boleh ubah tuntutan "Dihantar" (sebelum diluluskan)? |
-| Admin boleh ubah dan padam **mana-mana** tuntutan | Admin tak boleh ubah/padam tuntutan staf | Kekalkan (lebih selamat), atau admin perlu kuasa ini? |
-| Eksport **PDF** (semua & setiap staf), paparan ringkasan ikut staf, carian & penapis tarikh | Eksport CSV, laporan ikut bulan/jenis/status, "Belum dibayar" ikut staf | Perlukah PDF dan ringkasan ikut staf dalam laporan? |
-| Peringatan tiada | Emel peringatan 14 hari, laporan beza bayaran bulanan | Tambahan BSD |
+| Staf boleh **ubah/padam** tuntutan sendiri selagi belum dibayar | Staf boleh betulkan/padam selagi **belum diluluskan** (Draf, Dihantar, Ditolak). Ditolak boleh dibetulkan dan dihantar semula | Dikunci selepas Lulus (kelulusan dah berlaku). Setiap pembetulan direkod dalam sejarah dengan nilai lama → baharu |
+| Admin boleh ubah dan padam **mana-mana** tuntutan | Admin HR / Head of HR boleh ubah dan padam tuntutan staf pada apa-apa status | Sebab wajib; staf diemel; status dan identiti staf kekal; padam lembut dan resit disimpan sebagai bukti; ikut peraturan pelulus (Admin HR tak boleh untuk staf HR); tuntutan **sendiri** ikut peraturan staf biasa |
+| Eksport **PDF** (semua & setiap staf), ringkasan ikut staf, penapis tarikh | Laporan > **PDF untuk pengurusan** (halaman ringkasan + satu halaman setiap staf, lajur sama: ID / Tarikh, Tujuan / Kategori, Kasar, Dibayar, Baki, Status) dan butang PDF setiap staf; penapis Dari/Hingga | jsPDF 2.5.1 + autoTable 3.5.28 (versi sama sistem lama) dihos sendiri; tiada emel staf dalam PDF; tanda SULIT |
+
+### Tambahan dalam sistem baharu
+
+| Lama | Baharu |
+|---|---|
+| Peringatan tiada | Emel peringatan 14 hari, laporan beza bayaran bulanan (BSD) |

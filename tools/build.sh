@@ -40,6 +40,7 @@ done
 # 3. Kod kongsi frontend
 copy_dir "$ROOT/shared/ui"  "$OUT/shared/ui"
 copy_dir "$ROOT/shared/lib" "$OUT/shared/lib"
+copy_dir "$ROOT/shared/vendor" "$OUT/shared/vendor"
 
 # 4. Halaman public
 for p in "$ROOT"/public-pages/*/; do

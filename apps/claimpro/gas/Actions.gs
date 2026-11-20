@@ -10,6 +10,7 @@
  *   - tuntutan staf department HR hanya boleh diluluskan `ketua` (Admin HR tak lulus tuntutan rakan sendiri)
  *   - HANYA staf pemilik boleh sahkan terima bayaran (Lulus -> Dibayar). Admin/ketua tak boleh tukar ke Dibayar
  *   - `superadmin` portal TIDAK automatik pelulus: beri role `admin`/`ketua` di S-05 (direkod dalam AccessChangeLog)
+ * Ubah/padam (ikut sistem lama, keputusan pemilik 20/11/2026): lihat editMode_.
  * Skop data: staf nampak tuntutan sendiri sahaja; admin/ketua nampak semua. Emel staf tak didedah (paparan nama + no. pekerja).
  */
 
@@ -168,6 +169,42 @@ function addApproval_(ss, claimId, dari, ke, oleh, catatan) {
   appendObj_(sh, header, { id: nextId_(ss, 'APR', 6), claim_id: claimId, dari_status: dari, ke_status: ke, oleh_email: oleh, ts: nowIso_(), catatan: catatan || '' });
 }
 
+/**
+ * Siapa boleh ubah/padam tuntutan (ikut sistem lama, keputusan pemilik 20/11/2026: "kadang staf tersilap"):
+ *   'owner' staf pemilik: selagi belum diluluskan (Draf, Dihantar, Ditolak). Selepas Lulus dikunci.
+ *   'admin' Admin HR / Head of HR: tuntutan staf LAIN pada apa-apa status, tertakluk peraturan pelulus
+ *           (admin tak boleh untuk staf HR; ketua boleh). Wajib sebab; direkod dalam Approvals + AuditLog.
+ *   ''      tiada kebenaran.
+ * Tuntutan sendiri SENTIASA ikut peraturan pemilik (termasuk ketua), supaya tiada siapa ubah tuntutan sendiri selepas lulus.
+ */
+var OWNER_EDITABLE = ['Draf', 'Dihantar', 'Ditolak'];
+function editMode_(r, user) {
+  if (String(r.staff_email) === String(user.email)) return OWNER_EDITABLE.indexOf(String(r.status)) >= 0 ? 'owner' : '';
+  if (hasAdmin_(user) && cannotApproveReason_(r, user) === '') return 'admin';
+  return '';
+}
+
+function cleanReason_(v, label) {
+  var s = String(v === null || v === undefined ? '' : v).trim();
+  if (s.length < 3) throw httpError_(400, label + ' wajib (sekurang-kurangnya 3 aksara)');
+  if (s.length > LIMITS.sebab) throw httpError_(400, label + ' maksimum ' + LIMITS.sebab + ' aksara');
+  return s;
+}
+
+/** Ringkasan perubahan untuk jejak audit (nilai lama -> baharu). */
+function diffText_(before, c, fileCount) {
+  var parts = [];
+  var cmp = function (label, a, b) { if (String(a) !== String(b)) parts.push(label + ' ' + a + ' -> ' + b); };
+  cmp('tarikh', dateStr_(before.tarikh), c.tarikh);
+  cmp('jenis', textVal_(before.jenis), c.jenis);
+  cmp('pax', before.pax === '' || before.pax === null || before.pax === undefined ? '' : Number(before.pax), c.pax);
+  cmp('sesi', String(before.sesi_makan || ''), c.sesi_makan);
+  cmp('amaun', round2_(before.amaun_rm).toFixed(2), c.amaun_rm.toFixed(2));
+  if (textVal_(before.keterangan) !== c.keterangan) parts.push('keterangan diubah');
+  cmp('resit', fileIds_(before.receipt_file_id).length, fileCount);
+  return parts.join('; ') || 'tiada perubahan medan';
+}
+
 /** Bentuk awam. TIADA emel staf, TIADA ID fail Drive. */
 function claimPublic_(r, user) {
   var mine = String(r.staff_email) === String(user.email);
@@ -203,7 +240,9 @@ function claimPublic_(r, user) {
     bayar_oleh_nama: textVal_(r.paid_by_name),
     boleh_rekod_bayar: status === 'Lulus' && hasAdmin_(user) && cannotApproveReason_(r, user) === '',
     milik_saya: mine,
-    boleh_ubah: mine && status === 'Draf',
+    boleh_ubah: editMode_(r, user) !== '',
+    boleh_padam: editMode_(r, user) !== '',
+    ubah_sebagai_admin: editMode_(r, user) === 'admin',
     boleh_sahkan: mine && status === 'Lulus',
     hari_lulus: status === 'Lulus' && !isNaN(ap) ? Math.floor((Date.now() - ap) / 864e5) : null,
     dikemas_kini: isoStr_(r.updated_at)
@@ -309,9 +348,10 @@ function getClaim_(ss, user, p) {
 }
 
 /** Validasi ikut sistem lama (validateClaimRules) + had jenis. Had tahunan disemak dalam kunci (checkAnnual_). */
-function cleanClaim_(p, types, rates) {
+function cleanClaim_(p, types, rates, currentJenis) {
   var jenis = String(p.jenis || '').trim();
-  var type = types.filter(function (t) { return t.jenis === jenis && t.aktif; })[0];
+  // Jenis tak aktif masih dibenarkan jika tuntutan memang jenis itu (ubah tuntutan lama)
+  var type = types.filter(function (t) { return t.jenis === jenis && (t.aktif || t.jenis === currentJenis); })[0];
   if (!type) throw httpError_(400, 'Jenis tuntutan tak sah');
   var tarikh = String(p.tarikh || '').trim();
   if (!validDate_(tarikh)) throw httpError_(400, 'Tarikh perbelanjaan mesti tarikh sah (YYYY-MM-DD)');
@@ -339,59 +379,90 @@ function cleanClaim_(p, types, rates) {
 /**
  * payload: { claim_id?, tarikh, jenis, pax, sesi_makan?, keterangan, amaun_rm,
  *            resit?: {data} | [{data}, ...] (ditambah ke resit sedia ada, maksimum 10 semua),
- *            buang_resit?: true (semua) | [indeks, ...], hantar?: bool }
- * Identiti dari sesi, bukan input. Draf sahaja boleh diubah. Hantar perlukan sekurang-kurangnya satu resit
- * (sistem lama: handleSubmitClaim). Fail disimpan SEBELUM kunci; jika semakan akhir gagal, fail dibuang semula.
+ *            buang_resit?: true (semua) | [indeks, ...], hantar?: bool,
+ *            sebab_ubah?: string (WAJIB bila Admin/Head of HR ubah tuntutan staf lain) }
+ * Identiti dari sesi, bukan input. Siapa boleh ubah: editMode_. Status selepas simpan:
+ *   pemilik, tuntutan baharu/Draf/Ditolak: hantar ? Dihantar : Draf (Ditolak -> kelulusan lama dikosongkan)
+ *   pemilik, Dihantar: kekal Dihantar (dibetulkan sebelum kelulusan)
+ *   admin: status & identiti staf KEKAL; perubahan direkod dengan sebab dan staf diemel
+ * Hantar perlukan sekurang-kurangnya satu resit (sistem lama: handleSubmitClaim).
+ * Fail disimpan SEBELUM kunci; jika semakan akhir gagal, fail dibuang semula.
  */
 function saveClaim_(ss, user, p) {
-  var c = cleanClaim_(p, readTypes_(ss), mealRates_(ss));
-  var hantar = p.hantar === true;
-  var uploads = parseUploads_(p.resit, 'Resit');
   var sh = sheet_(ss, 'Claims');
   var id = String(p.claim_id || '').trim();
-  var removeAll = p.buang_resit === true;
-  var removeIdx = Array.isArray(p.buang_resit) ? p.buang_resit.map(Number) : [];
-  var keep = function (ids) { return removeAll ? [] : ids.filter(function (_, i) { return removeIdx.indexOf(i) < 0; }); };
-
-  var keptBefore = [];
+  var pre = null;
+  var mode = 'owner';
   if (id) {
-    var pre = findClaim_(readTable_(sh), id);
+    pre = findClaim_(readTable_(sh), id);
     if (!pre) throw httpError_(404, 'Tuntutan tidak dijumpai');
-    if (String(pre.staff_email) !== String(user.email)) {
+    mode = editMode_(pre, user);
+    if (!mode) {
+      if (String(pre.staff_email) === String(user.email)) throw httpError_(409, 'Tuntutan yang telah diluluskan tidak boleh diubah. Hubungi Admin HR jika ada kesilapan.');
       audit_(user.email, 'FORBIDDEN', 'saveClaim', id);
       throw httpError_(403, 'Tiada kebenaran');
     }
-    if (String(pre.status) !== 'Draf') throw httpError_(409, 'Hanya tuntutan berstatus Draf boleh diubah');
-    keptBefore = keep(fileIds_(pre.receipt_file_id));
   }
+  var c = cleanClaim_(p, readTypes_(ss), mealRates_(ss), pre ? textVal_(pre.jenis) : '');
+  var sebab = mode === 'admin' ? cleanReason_(p.sebab_ubah, 'Sebab perubahan') : '';
+  var nextStatus = function (cur) {
+    if (mode === 'admin') return String(cur.status);
+    if (cur && String(cur.status) === 'Dihantar') return 'Dihantar';
+    return p.hantar === true ? 'Dihantar' : 'Draf';
+  };
+  var status = nextStatus(pre);
+  var uploads = parseUploads_(p.resit, 'Resit');
+  var removeAll = p.buang_resit === true;
+  var removeIdx = Array.isArray(p.buang_resit) ? p.buang_resit.map(Number) : [];
+  var keep = function (ids) { return removeAll ? [] : ids.filter(function (_, i) { return removeIdx.indexOf(i) < 0; }); };
+  var amountCheck = function (r) {
+    // Admin tak boleh turunkan amaun di bawah jumlah yang syarikat dah bayar
+    var paid = r.paid_amount_rm === '' || r.paid_amount_rm === null || r.paid_amount_rm === undefined ? null : Number(r.paid_amount_rm);
+    if (paid !== null && c.amaun_rm < paid - 0.001) throw httpError_(400, 'Amaun tak boleh kurang daripada jumlah yang telah dibayar syarikat (RM ' + paid.toFixed(2) + ')');
+  };
+
+  var keptBefore = pre ? keep(fileIds_(pre.receipt_file_id)) : [];
   if (keptBefore.length + uploads.length > MAX_FILES_PER_CLAIM) throw httpError_(400, 'Maksimum ' + MAX_FILES_PER_CLAIM + ' fail satu tuntutan');
-  if (hantar && c.type.perlu_resit && keptBefore.length + uploads.length === 0) throw httpError_(400, 'Sekurang-kurangnya satu resit diperlukan untuk jenis "' + c.jenis + '"');
+  if (status !== 'Draf' && c.type.perlu_resit && keptBefore.length + uploads.length === 0) throw httpError_(400, 'Sekurang-kurangnya satu resit diperlukan untuk jenis "' + c.jenis + '"');
+  if (mode === 'admin') amountCheck(pre);
   if (!id) id = nextId_(ss, 'CLM', 5);
 
   var newIds = uploads.map(function (u) { return storeFile_(u, id, 'resit'); });
   var removed = [];
-  var saved;
+  var saved, from, diff = '';
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
     var t = readTable_(sh);
     columnsReady_(t, ['sesi_makan']);
     var cur = findClaim_(t, id);
-    if (cur && (String(cur.staff_email) !== String(user.email) || String(cur.status) !== 'Draf')) {
+    if (pre && (!cur || String(cur.status) !== String(pre.status) || editMode_(cur, user) !== mode)) {
       throw httpError_(409, 'Tuntutan telah berubah. Muat semula halaman.');
     }
+    if (mode === 'admin') amountCheck(cur);
+    from = cur ? String(cur.status) : '';
     var curIds = cur ? fileIds_(cur.receipt_file_id) : [];
     var kept = keep(curIds);
     if (kept.length + newIds.length > MAX_FILES_PER_CLAIM) throw httpError_(400, 'Maksimum ' + MAX_FILES_PER_CLAIM + ' fail satu tuntutan');
-    checkAnnual_(t.rows, user.email, c, id);
+    checkAnnual_(t.rows, cur ? String(cur.staff_email) : user.email, c, id);
     removed = curIds.filter(function (f) { return kept.indexOf(f) < 0; });
+    var ids = kept.concat(newIds);
+    if (cur) diff = diffText_(cur, c, ids.length);
     var now = nowIso_();
     var fields = {
-      staff_id: String(user.staff_id || ''), staff_name: String(user.nama || ''), department: String(user.department || ''),
       tarikh: c.tarikh, jenis: c.jenis, pax: c.pax, sesi_makan: c.sesi_makan, keterangan: c.keterangan, amaun_rm: c.amaun_rm,
-      receipt_file_id: kept.concat(newIds).join(','), status: hantar ? 'Dihantar' : 'Draf', updated_at: now, updated_by: user.email
+      receipt_file_id: ids.join(','), updated_at: now, updated_by: user.email
     };
-    if (hantar) fields.submitted_at = now;
+    if (mode === 'owner') {
+      fields.staff_id = String(user.staff_id || '');
+      fields.staff_name = String(user.nama || '');
+      fields.department = String(user.department || '');
+      fields.status = status;
+      if (status === 'Dihantar' && from !== 'Dihantar') fields.submitted_at = now;
+      if (from === 'Ditolak') { fields.approved_by = ''; fields.approved_by_name = ''; fields.approved_at = ''; fields.sebab_tolak = ''; }
+    } else if (from === 'Dibayar') {
+      fields.beza_bayaran = round2_(cur.received_amount_rm) !== c.amaun_rm ? 'TRUE' : 'FALSE';
+    }
     if (cur) {
       updateRowObj_(sh, t.header, cur._row, fields);
       saved = Object.assign({}, cur, fields);
@@ -399,7 +470,15 @@ function saveClaim_(ss, user, p) {
       saved = Object.assign({ claim_id: id, staff_email: user.email, beza_bayaran: 'FALSE', created_at: now, created_by: user.email, deleted: 'FALSE', deleted_reason: '' }, fields);
       appendObj_(sh, t.header, saved);
     }
-    if (hantar) addApproval_(ss, id, 'Draf', 'Dihantar', user.email, '');
+    if (mode === 'admin') {
+      addApproval_(ss, id, from, from, user.email, 'Diubah oleh ' + (user.nama || 'Admin') + '. Sebab: ' + sebab + ' | ' + diff);
+    } else if (status === 'Dihantar' && from !== 'Dihantar') {
+      addApproval_(ss, id, from || 'Draf', 'Dihantar', user.email, from === 'Ditolak' ? 'Dihantar semula selepas dibetulkan' : '');
+    } else if (from === 'Dihantar') {
+      addApproval_(ss, id, 'Dihantar', 'Dihantar', user.email, 'Dibetulkan oleh staf sebelum kelulusan: ' + diff);
+    } else if (from === 'Ditolak') {
+      addApproval_(ss, id, 'Ditolak', 'Draf', user.email, 'Dibuka semula sebagai draf untuk dibetulkan');
+    }
   } catch (e) {
     newIds.forEach(trashFile_);
     throw e;
@@ -407,32 +486,56 @@ function saveClaim_(ss, user, p) {
     lock.releaseLock();
   }
   removed.forEach(trashFile_);
-  audit_(user.email, hantar ? 'SUBMIT' : 'SAVE_DRAFT', id, 'jenis=' + c.jenis + '; amaun=' + c.amaun_rm + '; resit=' + fileIds_(saved.receipt_file_id).length);
-  if (hantar) notifyAdminsSubmitted_(ss, saved);
+  var submitted = mode === 'owner' && status === 'Dihantar' && from !== 'Dihantar';
+  var act = mode === 'admin' ? 'ADMIN_EDIT' : submitted ? (from === 'Ditolak' ? 'RESUBMIT' : 'SUBMIT') : from === 'Dihantar' ? 'EDIT_SUBMITTED' : 'SAVE_DRAFT';
+  audit_(user.email, act, id, 'jenis=' + c.jenis + '; amaun=' + c.amaun_rm + '; resit=' + fileIds_(saved.receipt_file_id).length + (diff ? '; ' + diff : '') + (sebab ? '; sebab=' + sebab : ''));
+  if (submitted) notifyAdminsSubmitted_(ss, saved);
+  if (mode === 'admin') notifyStaffAdminChange_(ss, saved, user, 'diubah', sebab, diff);
   return claimPublic_(saved, user);
 }
 
+/**
+ * payload: { claim_id, sebab? (WAJIB bila Admin/Head of HR padam tuntutan staf lain) }
+ * Pemilik: Draf/Dihantar/Ditolak; resit dibuang ke Trash Drive.
+ * Admin: apa-apa status (ikut sistem lama); padam lembut, fail DISIMPAN sebagai bukti, staf diemel.
+ */
 function deleteClaim_(ss, user, p) {
   var sh = sheet_(ss, 'Claims');
+  var pre = findClaim_(readTable_(sh), p.claim_id);
+  if (!pre) throw httpError_(404, 'Tuntutan tidak dijumpai');
+  var mode = editMode_(pre, user);
+  if (!mode) {
+    if (String(pre.staff_email) === String(user.email)) throw httpError_(409, 'Tuntutan yang telah diluluskan tidak boleh dipadam. Hubungi Admin HR jika ada kesilapan.');
+    audit_(user.email, 'FORBIDDEN', 'deleteClaim', String(p.claim_id));
+    throw httpError_(403, 'Tiada kebenaran');
+  }
+  var sebab = mode === 'admin' ? cleanReason_(p.sebab, 'Sebab padam') : '';
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   var files = [];
+  var r;
   try {
     var t = readTable_(sh);
-    var r = findClaim_(t, p.claim_id);
-    if (!r) throw httpError_(404, 'Tuntutan tidak dijumpai');
-    if (String(r.staff_email) !== String(user.email)) {
-      audit_(user.email, 'FORBIDDEN', 'deleteClaim', String(p.claim_id));
-      throw httpError_(403, 'Tiada kebenaran');
+    r = findClaim_(t, p.claim_id);
+    if (!r || String(r.status) !== String(pre.status) || editMode_(r, user) !== mode) throw httpError_(409, 'Tuntutan telah berubah. Muat semula halaman.');
+    var st = String(r.status);
+    var fields = { deleted: 'TRUE', updated_at: nowIso_(), updated_by: user.email };
+    if (mode === 'owner') {
+      files = fileIds_(r.receipt_file_id);
+      fields.receipt_file_id = '';
+      fields.deleted_reason = st === 'Draf' ? 'Draf dipadam oleh staf' : 'Dipadam oleh staf (status ' + st + ')';
+    } else {
+      fields.deleted_reason = 'Dipadam oleh ' + (user.nama || 'Admin') + ': ' + sebab;
     }
-    if (String(r.status) !== 'Draf') throw httpError_(409, 'Hanya tuntutan berstatus Draf boleh dipadam');
-    files = fileIds_(r.receipt_file_id);
-    updateRowObj_(sh, t.header, r._row, { deleted: 'TRUE', deleted_reason: 'Draf dipadam oleh staf', receipt_file_id: '', updated_at: nowIso_(), updated_by: user.email });
+    updateRowObj_(sh, t.header, r._row, fields);
+    if (st !== 'Draf' || mode === 'admin') addApproval_(ss, String(r.claim_id), st, 'Dipadam', user.email, mode === 'admin' ? 'Sebab: ' + sebab : 'Dipadam oleh staf');
   } finally {
     lock.releaseLock();
   }
   files.forEach(trashFile_);
-  audit_(user.email, 'DELETE_DRAFT', String(p.claim_id), '');
+  var act = mode === 'admin' ? 'ADMIN_DELETE' : String(r.status) === 'Draf' ? 'DELETE_DRAFT' : 'DELETE_CLAIM';
+  audit_(user.email, act, String(p.claim_id), sebab ? 'status=' + r.status + '; sebab=' + sebab : 'status=' + r.status);
+  if (mode === 'admin') notifyStaffAdminChange_(ss, r, user, 'dipadam', sebab, '');
   return true;
 }
 
@@ -704,15 +807,20 @@ function listToPay_(ss, user) {
   };
 }
 
-/** payload: { bulan?: 'YYYY-MM' (ikut tarikh perbelanjaan), jenis?, status?, department? } */
+/** payload: { bulan?: 'YYYY-MM', dari?: 'YYYY-MM-DD', hingga?: 'YYYY-MM-DD' (ikut tarikh perbelanjaan), jenis?, status?, department? } */
 function claimReport_(ss, user, p) {
   requireAdmin_(user, 'claimReport');
   var bulan = String(p.bulan || '');
   if (bulan && !/^\d{4}-\d{2}$/.test(bulan)) throw httpError_(400, 'Bulan mesti format YYYY-MM');
   var jenis = String(p.jenis || ''), status = String(p.status || ''), dept = String(p.department || '');
+  var dari = String(p.dari || ''), hingga = String(p.hingga || '');
+  if ((dari && !validDate_(dari)) || (hingga && !validDate_(hingga))) throw httpError_(400, 'Tarikh penapis mesti format YYYY-MM-DD');
+  if (dari && hingga && dari > hingga) throw httpError_(400, 'Tarikh "dari" mesti sebelum "hingga"');
   var rows = readTable_(sheet_(ss, 'Claims')).rows.filter(function (r) {
     if (isDeleted_(r) || !String(r.claim_id) || String(r.status) === 'Draf') return false;
     if (bulan && dateStr_(r.tarikh).slice(0, 7) !== bulan) return false;
+    if (dari && dateStr_(r.tarikh) < dari) return false;
+    if (hingga && dateStr_(r.tarikh) > hingga) return false;
     if (jenis && textVal_(r.jenis) !== jenis) return false;
     if (status && String(r.status) !== status) return false;
     if (dept && String(r.department) !== dept) return false;

@@ -8,6 +8,7 @@ import { el, clear, append } from '/shared/lib/escape.js';
 import { formatRM, formatDate, formatDateTime, todayIso } from '/shared/lib/format.js';
 import { icon, toast, openModal, confirmDialog, busy, badge, emptyState, renderModuleNav } from '/shared/ui/components.js';
 import { prepareFile, MAX_FILES } from '/claimpro/receipt.js';
+import { exportReportPdf, exportStaffPdf, groupByStaff } from '/claimpro/pdf.js';
 
 const MODULE = 'claimpro';
 const main = document.getElementById('main');
@@ -136,6 +137,15 @@ function receiptPicker({ claimId, existing = 0, onChange }) {
   return { node: box, files: () => [...added], removedIdx: () => [...removed], count };
 }
 
+/** Label butang ubah ikut status (cara lama: staf betulkan sebelum lulus; HR ubah mana-mana). */
+function editLabel(c) {
+  if (c.ubah_sebagai_admin) return 'Ubah (HR)';
+  if (c.status === 'Dihantar') return 'Betulkan';
+  if (c.status === 'Ditolak') return 'Betulkan & hantar semula';
+  return 'Ubah draf';
+}
+const editLink = (c, cls = 'btn btn-secondary btn-sm') => (c.boleh_ubah ? el('a', { class: cls, href: '#/e/' + encodeURIComponent(c.claim_id) }, icon('pencil'), editLabel(c)) : null);
+
 // ------------------------------------------------------------------ router
 async function route() {
   const h = location.hash || '#/';
@@ -202,7 +212,7 @@ async function renderMine() {
     host.append(el('div', { class: 'cp-list' }, rows.map((c) => claimCard(c, {
       actions: [
         c.boleh_sahkan ? el('a', { class: 'btn btn-sm', href: '#/c/' + encodeURIComponent(c.claim_id) }, icon('circle-check'), 'Sahkan terima bayaran') : null,
-        c.boleh_ubah ? el('a', { class: 'btn btn-secondary btn-sm', href: '#/e/' + encodeURIComponent(c.claim_id) }, icon('pencil'), 'Ubah draf') : null,
+        editLink(c),
       ],
     }))));
   };
@@ -235,6 +245,8 @@ function batches(files) {
 async function renderForm(claimId) {
   const existing = claimId ? await call('getClaim', { claim_id: claimId }) : null;
   if (existing && !existing.boleh_ubah) { location.replace('#/c/' + encodeURIComponent(claimId)); return; }
+  // mode: 'baru' | 'Draf' | 'Dihantar' | 'Ditolak' (pemilik) | 'admin' (HR ubah tuntutan staf, status kekal)
+  const mode = !existing ? 'baru' : existing.ubah_sebagai_admin ? 'admin' : existing.status;
   const startDate = existing ? existing.tarikh : todayIso();
   let tp = await loadTypes(startDate.slice(0, 4));
   const f = {
@@ -248,7 +260,9 @@ async function renderForm(claimId) {
   };
   const fillTypes = () => {
     const cur = f.jenis.value || existing?.jenis || '';
-    append(clear(f.jenis), el('option', { value: '' }, 'Pilih jenis'), tp.map((t) => el('option', { value: t.jenis }, t.jenis)));
+    const names = tp.map((t) => t.jenis);
+    if (existing && !names.includes(existing.jenis)) names.push(existing.jenis); // jenis lama yang dah tak aktif
+    append(clear(f.jenis), el('option', { value: '' }, 'Pilih jenis'), names.map((n) => el('option', { value: n }, n)));
     f.jenis.value = cur;
   };
   fillTypes();
@@ -261,7 +275,15 @@ async function renderForm(claimId) {
   const typeHint = el('div', { class: 'alert alert-info', hidden: true });
   const picker = receiptPicker({ claimId, existing: existing?.bil_resit || 0 });
   const err = errBox();
-  const type = () => tp.find((x) => x.jenis === f.jenis.value);
+  const type = () => tp.find((x) => x.jenis === f.jenis.value) || (existing && f.jenis.value === existing.jenis ? { jenis: existing.jenis, perlu_resit: true } : undefined);
+  // Baki tahunan: amaun tuntutan ini sendiri (jika dah dikira) dikembalikan. HR: baki ialah milik staf, disemak di server.
+  const counted = existing && ['Dihantar', 'Lulus', 'Dibayar'].includes(existing.status);
+  const baki = (t) => {
+    if (mode === 'admin' || !t?.had_tahunan_rm) return null;
+    const back = counted && existing.jenis === t.jenis && existing.tarikh.slice(0, 4) === t.tahun ? existing.amaun_rm : 0;
+    return Math.round((t.baki_rm + back) * 100) / 100;
+  };
+  const sebabUbah = el('textarea', { class: 'input', rows: 2, maxlength: 300, placeholder: 'Contoh: Staf tersilap taip amaun, disahkan dengan resit' });
   const sesi = () => (f.siang.checked && f.malam.checked ? 'siang+malam' : f.siang.checked ? 'siang' : f.malam.checked ? 'malam' : '');
 
   const updateHint = () => {
@@ -274,7 +296,7 @@ async function renderForm(claimId) {
       const cap = mealCap(t, sesi(), Number(f.pax.value) || 0);
       if (cap !== null) parts.push(`Had tuntutan ini: ${formatRM(cap)}.`);
     }
-    if (t?.had_tahunan_rm) parts.push(`Baki ${t.jenis} ${t.tahun}: ${formatRM(t.baki_rm)} daripada ${formatRM(t.had_tahunan_rm)}.`);
+    if (baki(t) !== null) parts.push(`Baki ${t.jenis} ${t.tahun}: ${formatRM(baki(t))} daripada ${formatRM(t.had_tahunan_rm)}.`);
     if (t?.had_rm) parts.push(`Had setiap tuntutan: ${formatRM(t.had_rm)}.`);
     if (t && !t.perlu_resit) parts.push('Resit tak wajib untuk jenis ini.');
     clear(typeHint).append(parts.join(' '));
@@ -301,17 +323,20 @@ async function renderForm(claimId) {
     if (t.guna_sesi_makan && !sesi()) return 'Pilih sesi makan (Siang / Malam)';
     const cap = mealCap(t, sesi(), pax);
     if (cap !== null && amt > cap + 0.001) return `Melebihi had makan ${formatRM(cap)}`;
-    if (t.had_tahunan_rm && amt > t.baki_rm + 0.001) return `Melebihi baki ${t.jenis} ${t.tahun} (${formatRM(t.baki_rm)})`;
+    if (baki(t) !== null && amt > baki(t) + 0.001) return `Melebihi baki ${t.jenis} ${t.tahun} (${formatRM(baki(t))})`;
     if (!f.keterangan.value.trim()) return 'Isi keterangan';
+    if (mode === 'admin' && sebabUbah.value.trim().length < 3) return 'Isi sebab perubahan (staf akan dimaklumkan)';
     if (hantar && t.perlu_resit && picker.count() === 0) return 'Sekurang-kurangnya satu resit diperlukan';
     return '';
   };
 
   async function save(hantar, btn) {
     err.hidden = true;
-    const bad = clientCheck(hantar);
+    // Dihantar & admin: resit wajib kekal (status bukan Draf)
+    const bad = clientCheck(hantar || mode === 'Dihantar' || (mode === 'admin' && existing.status !== 'Draf'));
     if (bad) { showErr(err, new Error(bad)); return; }
-    if (hantar && !(await confirmDialog('Hantar tuntutan?', `RM ${Number(f.amaun.value).toFixed(2)} (${f.jenis.value}). Selepas dihantar, tuntutan tak boleh diubah.`, { okLabel: 'Hantar' }))) return;
+    if (hantar && !(await confirmDialog(mode === 'Ditolak' ? 'Hantar semula?' : 'Hantar tuntutan?',
+      `RM ${Number(f.amaun.value).toFixed(2)} (${f.jenis.value}). Anda masih boleh betulkan selagi belum diluluskan.`, { okLabel: 'Hantar' }))) return;
     await busy(btn, async () => {
       try {
         const base = { jenis: f.jenis.value, tarikh: f.tarikh.value, pax: Number(f.pax.value), sesi_makan: sesi(), keterangan: f.keterangan.value, amaun_rm: f.amaun.value };
@@ -323,28 +348,37 @@ async function renderForm(claimId) {
           c = await call('saveClaim', {
             ...base, claim_id: id, resit: groups[i].map((x) => ({ data: x.data })),
             buang_resit: i === 0 && picker.removedIdx().length ? picker.removedIdx() : undefined, hantar: last && hantar,
+            sebab_ubah: mode === 'admin' ? sebabUbah.value : undefined,
           });
           id = c.claim_id;
           if (groups.length > 1 && !last) toast(`Muat naik fail ${i + 1}/${groups.length}...`, 'info', 2000);
         }
-        toast(hantar ? `${c.claim_id} dihantar untuk kelulusan.` : `Draf ${c.claim_id} disimpan.`, 'success');
-        location.hash = hantar ? '#/c/' + encodeURIComponent(c.claim_id) : '#/';
+        const msg = mode === 'admin' ? `${c.claim_id} dikemas kini. Staf dimaklumkan.`
+          : hantar ? `${c.claim_id} dihantar untuk kelulusan.` : mode === 'Dihantar' ? `${c.claim_id} dibetulkan. Masih menunggu kelulusan.` : `Draf ${c.claim_id} disimpan.`;
+        toast(msg, 'success');
+        location.hash = hantar || mode === 'admin' || mode === 'Dihantar' ? '#/c/' + encodeURIComponent(c.claim_id) : '#/';
       } catch (e) { showErr(err, e); }
     });
   }
-  const draf = el('button', { class: 'btn btn-secondary', type: 'button' }, icon('save'), 'Simpan draf');
-  const hantar = el('button', { class: 'btn', type: 'button' }, icon('check'), 'Hantar');
+  const simpanSahaja = mode === 'Dihantar' || mode === 'admin';
+  const draf = el('button', { class: 'btn btn-secondary', type: 'button', hidden: simpanSahaja }, icon('save'), 'Simpan draf');
+  const hantar = el('button', { class: 'btn', type: 'button' }, icon('check'), simpanSahaja ? 'Simpan perubahan' : mode === 'Ditolak' ? 'Hantar semula' : 'Hantar');
   draf.addEventListener('click', () => save(false, draf));
-  hantar.addEventListener('click', () => save(true, hantar));
-  const del = existing ? el('button', { class: 'btn btn-ghost', type: 'button' }, icon('x'), 'Padam draf') : null;
-  del?.addEventListener('click', async () => {
-    if (!(await confirmDialog('Padam draf?', 'Draf dan resitnya akan dipadam.', { danger: true, okLabel: 'Padam' }))) return;
-    try { await call('deleteClaim', { claim_id: claimId }); toast('Draf dipadam.', 'success'); location.hash = '#/'; } catch (e) { showErr(err, e); }
-  });
+  hantar.addEventListener('click', () => save(!simpanSahaja, hantar));
+  const del = existing ? el('button', { class: 'btn btn-ghost', type: 'button' }, icon('x'), mode === 'Draf' ? 'Padam draf' : 'Padam tuntutan') : null;
+  del?.addEventListener('click', () => (mode === 'admin' ? adminDelete(existing) : ownerDelete(existing, err)));
+
+  const notes = {
+    Dihantar: el('div', { class: 'alert alert-info' }, 'Tuntutan ini sedang menunggu kelulusan. Perubahan disimpan terus dan status kekal Dihantar.'),
+    Ditolak: el('div', { class: 'alert alert-danger' }, 'Ditolak: ', existing?.sebab_tolak || '-', '. Betulkan dan hantar semula, atau simpan sebagai draf.'),
+    admin: el('div', { class: 'alert alert-warning' }, `Anda mengubah tuntutan ${existing?.staff_name} (${existing?.staff_id}) sebagai HR. Status kekal ${existing?.status}. Sebab dan perubahan direkod dalam sejarah, dan staf akan diemel.`),
+  };
+  const title = { baru: 'Tuntutan baru', Draf: 'Ubah draf ', Dihantar: 'Betulkan ', Ditolak: 'Betulkan ', admin: 'Ubah tuntutan ' }[mode] + (existing ? existing.claim_id : '');
 
   append(view,
-    el('h2', null, existing ? 'Ubah draf ' + existing.claim_id : 'Tuntutan baru'),
+    el('h2', null, title),
     el('form', { class: 'cp-form', onsubmit: (e) => e.preventDefault(), novalidate: true },
+      notes[mode] || null,
       err,
       el('div', { class: 'cp-grid' },
         field('Jenis tuntutan', f.jenis, { required: true, cls: 'full' }),
@@ -355,7 +389,37 @@ async function renderForm(claimId) {
       typeHint,
       field('Keterangan', f.keterangan, { required: true, hint: 'Maksimum 500 aksara.' }),
       el('div', { class: 'field' }, el('span', { class: 'label' }, 'Resit'), picker.node),
+      mode === 'admin' ? field('Sebab perubahan', sebabUbah, { required: true, hint: 'Staf akan nampak sebab ini dalam emel dan sejarah tuntutan.' }) : null,
       el('div', { class: 'row' }, hantar, draf, del)));
+}
+
+async function ownerDelete(c, err) {
+  const draf = c.status === 'Draf';
+  if (!(await confirmDialog(draf ? 'Padam draf?' : `Padam ${c.claim_id}?`, `${draf ? 'Draf' : 'Tuntutan'} dan resitnya akan dipadam.${c.status === 'Dihantar' ? ' Tuntutan ditarik balik daripada senarai kelulusan.' : ''}`, { danger: true, okLabel: 'Padam' }))) return;
+  try { await call('deleteClaim', { claim_id: c.claim_id }); toast(draf ? 'Draf dipadam.' : `${c.claim_id} dipadam.`, 'success'); location.hash = '#/'; } catch (e) { showErr(err, e); }
+}
+
+/** HR padam tuntutan staf: sebab wajib, resit disimpan sebagai bukti, staf diemel. */
+function adminDelete(c) {
+  const why = el('textarea', { class: 'input', rows: 3, maxlength: 300, placeholder: 'Contoh: Tuntutan berganda dengan CLM-2026-00012' });
+  const err = errBox();
+  openModal({
+    title: 'Padam ' + c.claim_id,
+    body: el('div', { class: 'stack' }, err,
+      el('p', null, `${c.staff_name} · ${c.jenis} · ${formatRM(c.amaun_rm)} · ${c.status}`),
+      field('Sebab (wajib)', why, { required: true, hint: 'Staf akan diemel. Resit dan bukti disimpan dalam Drive sebagai rekod.' })),
+    actions: [
+      { label: 'Batal', class: 'btn-secondary' },
+      { label: 'Padam tuntutan', class: 'btn-danger', onClick: ({ close, button }) => busy(button, async () => {
+        try {
+          await call('deleteClaim', { claim_id: c.claim_id, sebab: why.value });
+          close();
+          toast(`${c.claim_id} dipadam. Staf dimaklumkan.`, 'success');
+          location.hash = '#/laporan';
+        } catch (e) { showErr(err, e); }
+      }) },
+    ],
+  });
 }
 
 // ------------------------------------------------------------------ butiran + S-53 sahkan terima bayaran
@@ -384,7 +448,7 @@ async function renderDetail(id) {
         c.ada_bukti_bayar ? el('button', { class: 'btn btn-secondary', type: 'button', onclick: () => viewFile(c.claim_id, 'bayaran') }, icon('scroll-text'), 'Bukti bayaran syarikat') : null,
         c.ada_bukti ? el('button', { class: 'btn btn-secondary', type: 'button', onclick: () => viewFile(c.claim_id, 'bukti') }, icon('scroll-text'), 'Bukti terima') : null,
         c.boleh_rekod_bayar ? el('button', { class: 'btn', type: 'button', onclick: () => paymentModal([c], route) }, icon('plus'), c.ada_bukti_bayar ? 'Ganti bukti bayaran' : 'Rekod bukti bayaran') : null,
-        c.boleh_ubah ? el('a', { class: 'btn btn-secondary', href: '#/e/' + encodeURIComponent(c.claim_id) }, icon('pencil'), 'Ubah draf') : null)),
+        editLink(c, 'btn btn-secondary'))),
     overdue ? el('div', { class: 'alert alert-warning' }, icon('triangle-alert'), `Diluluskan ${c.hari_lulus} hari lalu. Jika dah terima bayaran, sila sahkan di bawah.`) : null,
     c.boleh_sahkan ? confirmForm(c) : null,
     el('section', { class: 'card' }, el('h3', null, 'Sejarah'),
@@ -582,18 +646,31 @@ async function renderReports(tab) {
 
 async function renderReportMain(host) {
   const tp = await loadTypes();
-  const bulan = inp({ type: 'month', value: todayIso().slice(0, 7) });
+  const dari = inp({ type: 'date', value: todayIso().slice(0, 8) + '01', max: todayIso() });
+  const hingga = inp({ type: 'date', value: todayIso(), max: todayIso() });
   const jenis = el('select', { class: 'input' }, [el('option', { value: '' }, 'Semua jenis'), ...tp.map((t) => el('option', { value: t.jenis }, t.jenis))]);
   const status = el('select', { class: 'input' }, [['', 'Semua status'], ['Dihantar', 'Dihantar'], ['Lulus', 'Lulus'], ['Ditolak', 'Ditolak'], ['Dibayar', 'Dibayar']].map(([v, t]) => el('option', { value: v }, t)));
   const go = el('button', { class: 'btn', type: 'button' }, icon('search'), 'Tapis');
   const csv = el('button', { class: 'btn btn-secondary', type: 'button', disabled: true }, icon('download'), 'Eksport CSV');
+  const pdf = el('button', { class: 'btn btn-secondary', type: 'button', disabled: true }, icon('download'), 'PDF untuk pengurusan');
   const out = el('div', { class: 'stack' });
   let last = [];
+  let lastR = null;
+  let used = {};
+  const tempoh = () => (used.dari || used.hingga ? `${used.dari ? formatDate(used.dari) : 'awal'} hingga ${used.hingga ? formatDate(used.hingga) : 'kini'}` : 'Semua tarikh');
+  const penapis = () => [used.jenis && `jenis ${used.jenis}`, used.status && `status ${used.status}`].filter(Boolean);
+  const staffPdf = (claims, btn) => busy(btn, async () => {
+    try { await exportStaffPdf({ claims, tempoh: tempoh(), oleh: ctx.me?.staff?.nama || 'Admin HR' }); } catch (e) { toast(e.message, 'danger'); }
+  });
   const run = () => busy(go, async () => {
     try {
-      const r = await call('claimReport', { bulan: bulan.value, jenis: jenis.value, status: status.value });
+      used = { dari: dari.value, hingga: hingga.value, jenis: jenis.value, status: status.value };
+      const r = await call('claimReport', used);
       last = r.tuntutan;
+      lastR = r;
       csv.disabled = !last.length;
+      pdf.disabled = !last.length;
+      const groups = groupByStaff(last);
       clear(out);
       append(out,
         el('div', { class: 'cp-stats' },
@@ -601,6 +678,22 @@ async function renderReportMain(host) {
           el('div', { class: 'cp-stat' }, el('div', { class: 'label' }, 'Jumlah'), el('div', { class: 'v' }, formatRM(r.jumlah_rm))),
           el('div', { class: 'cp-stat ' + (r.beza_bayaran ? 'warn' : '') }, el('div', { class: 'label' }, 'Beza bayaran'), el('div', { class: 'v' }, String(r.beza_bayaran)))),
         r.terpotong ? el('div', { class: 'alert alert-warning' }, 'Hanya 2,000 baris pertama dipapar. Tapis lebih spesifik.') : null,
+        groups.length ? el('section', { class: 'stack' }, el('h3', { style: 'margin:8px 0 0' }, 'Ringkasan ikut staf'),
+          el('p', { class: 'caption', style: 'margin:0' }, 'Kasar, dibayar dan baki tidak termasuk tuntutan Ditolak. Dibayar = jumlah diterima staf, atau bayaran yang direkod syarikat.'),
+          el('div', { class: 'table-wrap responsive' }, el('table', { class: 'table' },
+            el('thead', null, el('tr', null, ['Staf', 'Bil.', 'Kasar', 'Dibayar', 'Baki', ''].map((h) => el('th', { scope: 'col' }, h)))),
+            el('tbody', null, groups.map((g) => {
+              const b = el('button', { class: 'btn btn-secondary btn-sm', type: 'button' }, icon('download'), 'PDF');
+              b.addEventListener('click', () => staffPdf(g.tuntutan, b));
+              return el('tr', null,
+                el('td', { 'data-label': 'Staf' }, `${g.staff_name} (${g.staff_id || '-'}) · ${g.department || '-'}`),
+                el('td', { 'data-label': 'Bil.', class: 'num' }, String(g.bilangan)),
+                el('td', { 'data-label': 'Kasar', class: 'num' }, formatRM(g.kasar)),
+                el('td', { 'data-label': 'Dibayar', class: 'num' }, formatRM(g.dibayar)),
+                el('td', { 'data-label': 'Baki', class: 'num' }, formatRM(g.baki)),
+                el('td', { class: 'actions' }, b));
+            }))))) : null,
+        r.tuntutan.length ? el('h3', { style: 'margin:8px 0 0' }, 'Senarai tuntutan') : null,
         r.tuntutan.length ? el('div', { class: 'table-wrap responsive' }, el('table', { class: 'table' },
           el('thead', null, el('tr', null, ['ID', 'Staf', 'Tarikh', 'Jenis', 'Amaun', 'Status', ''].map((h) => el('th', { scope: 'col' }, h)))),
           el('tbody', null, r.tuntutan.map((c) => el('tr', null,
@@ -609,13 +702,16 @@ async function renderReportMain(host) {
             el('td', { 'data-label': 'Tarikh' }, formatDate(c.tarikh)), el('td', { 'data-label': 'Jenis' }, c.jenis),
             el('td', { 'data-label': 'Amaun', class: 'num' }, formatRM(c.amaun_rm)),
             el('td', { 'data-label': 'Status' }, el('div', { class: 'chips' }, badge(c.status, STATUS_KIND[c.status]), paidBadge(c), c.beza_bayaran ? badge('Beza', 'warning') : null)),
-            el('td', { class: 'actions' }, el('a', { class: 'btn btn-secondary btn-sm', href: '#/c/' + encodeURIComponent(c.claim_id) }, 'Buka'))))))) : emptyState('scroll-text', 'Tiada tuntutan sepadan.'));
+            el('td', { class: 'actions' }, el('a', { class: 'btn btn-secondary btn-sm', href: '#/c/' + encodeURIComponent(c.claim_id) }, 'Buka'), editLink(c))))))) : emptyState('scroll-text', 'Tiada tuntutan sepadan.'));
     } catch (e) { clear(out).append(el('div', { class: 'alert alert-danger' }, e.message)); }
   });
   go.addEventListener('click', run);
-  csv.addEventListener('click', () => downloadCsv(`ClaimPro_${bulan.value || 'semua'}.csv`, last));
-  append(host, el('div', { class: 'cp-grid' }, field('Bulan (tarikh perbelanjaan)', bulan), field('Jenis', jenis), field('Status', status)),
-    el('div', { class: 'row', style: 'margin:12px 0' }, go, csv), out);
+  csv.addEventListener('click', () => downloadCsv(`ClaimPro_${used.dari || 'awal'}_${used.hingga || 'kini'}.csv`, last));
+  pdf.addEventListener('click', () => busy(pdf, async () => {
+    try { await exportReportPdf({ claims: last, tempoh: tempoh(), penapis: penapis(), oleh: ctx.me?.staff?.nama || 'Admin HR', terpotong: lastR?.terpotong }); } catch (e) { toast(e.message, 'danger'); }
+  }));
+  append(host, el('div', { class: 'cp-grid' }, field('Dari (tarikh perbelanjaan)', dari), field('Hingga', hingga), field('Jenis', jenis), field('Status', status)),
+    el('div', { class: 'row', style: 'margin:12px 0' }, go, pdf, csv), out);
   await run();
 }
 

@@ -20,6 +20,12 @@ Sistem **tak membaca designation** (Manager / Head / apa-apa). Kuasa ikut role y
 > 5. **Deploy > Manage deployments > pensel > New version > Deploy.**
 > 6. Uji #15 hingga #19 di bawah.
 
+> **Kemas kini 20/11/2026 (malam): ubah/padam ikut cara lama + PDF.** Tiada lajur baharu, jadi tak perlu run setupSystem:
+> 1. Merge PR terbaru ke `main`. Tunggu Cloudflare Pages siap deploy (PDF guna fail baharu `/shared/vendor/`).
+> 2. Dalam projek `VP-claimpro`: ganti isi fail **Actions** dan **Notify** dengan versi GitHub terbaru. Ctrl+S.
+> 3. **Deploy > Manage deployments > pensel > New version > Deploy.**
+> 4. Uji #20 hingga #24 di bawah.
+
 ---
 
 ## Langkah 1 - Merge ke `main` (GitHub)
@@ -144,6 +150,11 @@ Uji dengan akaun sebenar (taip `/claimpro/` terus):
 | 17 | Tuntutan dengan 3 resit (gambar + PDF) | Butang Resit 1, 2, 3 di butiran |
 | 18 | Admin HR: Lulus dengan tanda "Bayaran dah dibuat" + slip | Lulus, bukti bayaran direkod, staf dapat emel dengan jumlah |
 | 19 | Laporan > Belum dibayar: pilih 2 tuntutan seorang staf, satu jumlah kurang, satu slip | Kedua-dua ada bukti; satu ditanda "Separa"; staf dapat satu emel. Staf sahkan terima: jumlah pra-isi ikut bayaran syarikat |
+| 20 | Staf hantar tuntutan, kemudian tekan **Betulkan**, tukar amaun, Simpan perubahan | Status kekal Dihantar; sejarah tunjuk "amaun lama -> baharu". Admin tak dapat emel kali kedua |
+| 21 | Admin HR tolak tuntutan; staf tekan **Betulkan & hantar semula** | Status Dihantar semula; sebab tolak lama hilang; admin dapat emel |
+| 22 | Selepas Lulus, staf buka tuntutan | Tiada butang ubah/padam (dikunci) |
+| 23 | Admin HR: Laporan > tuntutan staf > **Ubah (HR)**, tukar amaun tanpa sebab, kemudian dengan sebab. Kemudian **Padam tuntutan** dengan sebab | Tanpa sebab ditolak. Dengan sebab: status kekal, staf dapat emel. Padam: hilang dari senarai staf, resit masih dalam Drive |
+| 24 | Laporan > pilih Dari/Hingga > **PDF untuk pengurusan**, dan butang **PDF** pada satu staf | PDF dimuat turun: halaman ringkasan + satu halaman setiap staf, tiada emel staf, tanda SULIT |
 
 Padam tuntutan ujian dari Sheet (atau tanda `deleted` = TRUE) sebelum go-live.
 
