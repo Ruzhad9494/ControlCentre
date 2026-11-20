@@ -23,15 +23,19 @@ var SCHEMA = {
 
 var STATUSES = ['Draf', 'Dihantar', 'Lulus', 'Ditolak', 'Dibayar'];
 
-// Senarai jenis AWAL daripada BSD 3.6 (cadangan, BUKAN dari sistem lama). Admin ClaimPro ubah di portal
-// (Laporan > Jenis tuntutan): tambah/buang, tetapkan had RM dan sama ada resit wajib.
+// Senarai jenis AWAL ikut sistem ClaimPro lama (lajur Jenis, disahkan pemilik 20/11/2026). Nama "Makan & Minuman"
+// diambil daripada paparan terpotong ("Makan & Minum..."): betulkan di portal (Laporan > Jenis tuntutan) jika berbeza.
+// Admin ubah di portal: tambah/buang, had RM, dan sama ada resit wajib.
+// perlu_resit = TRUE untuk semua sebagai lalai selamat; sistem lama membenarkan "Tiada Resit", jadi pemilik
+// perlu tetapkan jenis mana yang sebenarnya tak wajib resit.
 var TYPE_SEED = [
-  // jenis,        perlu_resit
-  ['Perjalanan',   true],
-  ['Makan',        true],
-  ['Perubatan',    true],
-  ['Penginapan',   true],
-  ['Lain-lain',    true]
+  // jenis,             perlu_resit
+  ['Perjalanan',        true],
+  ['Makan & Minuman',   true],
+  ['Penginapan',        true],
+  ['Perubatan',         true],
+  ['Keraian',           true],
+  ['Lain-lain',         true]
 ];
 
 var SETTINGS_SEED = [

@@ -75,12 +75,12 @@ $b = New-Object byte[] 48; [Security.Cryptography.RandomNumberGenerator]::Create
 Kemudian dalam editor:
 
 1. Run **`checkConfig`**. Log: `checkConfig OK (ENV=prod)`.
-2. Run **`setupSystem`**. Google akan minta kebenaran **Drive** dan **hantar emel**; benarkan. Log: `setupSystem selesai: VP-ClaimPro | ClaimTypes (baru) seed=5 | Claims (baru) | Approvals (baru) | Settings (baru) seed=4 | ...`
+2. Run **`setupSystem`**. Google akan minta kebenaran **Drive** dan **hantar emel**; benarkan. Log: `setupSystem selesai: VP-ClaimPro | ClaimTypes (baru) seed=6 | Claims (baru) | Approvals (baru) | Settings (baru) seed=4 | ...`
 3. Buka Sheet `VP-ClaimPro` > tab **Settings**, isi lajur `value`:
    - `portal_url`: contoh `https://voltake-portal.pages.dev` (tanpa `/` di hujung)
    - `admin_notify_emails`: emel yang terima "tuntutan baru" dan "beza bayaran" (satu peti emel HR, atau beberapa emel dipisah koma)
    - `head_report_email`: emel Head of HR (laporan bulanan beza bayaran)
-4. Tab **ClaimTypes**: 5 jenis awal ialah **cadangan**, bukan dari sistem lama. Semak di portal selepas Langkah 8 (Laporan > Jenis tuntutan): buang yang tak perlu, tetapkan had RM dan sama ada resit wajib.
+4. Tab **ClaimTypes**: 6 jenis awal diambil dari sistem lama (Perjalanan, Makan & Minuman, Penginapan, Perubatan, Keraian, Lain-lain). Nama "Makan & Minuman" saya agak dari paparan terpotong: betulkan jika berbeza. **Semua ditetapkan resit wajib**, sedangkan sistem lama membenarkan "Tiada Resit". Semak di portal selepas Langkah 8 (Laporan > Jenis tuntutan): tetapkan jenis mana yang resit tak wajib, dan had RM jika ada.
 5. Menu **Triggers** (ikon jam): patut ada 3 trigger (`dailyArchive`, `dailyReminders`, `monthlyBezaReport`).
 
 ## Langkah 6 - Deploy web app
@@ -117,7 +117,7 @@ Uji dengan akaun sebenar (taip `/claimpro/` terus):
 
 | # | Ujian | Lulus bila |
 |---|---|---|
-| 1 | Staf hantar tuntutan Makan dengan gambar resit dari telefon (iPhone dan Android) | ID `CLM-2026-00001`. Gambar masuk Drive `VP-Files/ClaimPro/Receipts/2026-11/` |
+| 1 | Staf hantar tuntutan Makan & Minuman dengan gambar resit dari telefon (iPhone dan Android) | ID `CLM-2026-00001`. Gambar masuk Drive `VP-Files/ClaimPro/Receipts/2026-11/` |
 | 2 | Emel "tuntutan baru" sampai ke `admin_notify_emails` | Ada pautan ke portal; tiada emel peribadi staf dalam kandungan |
 | 3 | Admin HR lulus tuntutan staf biasa | Lulus. Staf dapat emel |
 | 4 | Admin HR cuba lulus tuntutan **sendiri** | Ditolak: "hanya boleh diluluskan Head of HR" |

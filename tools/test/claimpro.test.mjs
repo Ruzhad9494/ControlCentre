@@ -18,7 +18,7 @@ const U = {
 const today = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
 const daysAgo = (n) => new Date(Date.now() + 8 * 3600e3 - n * 864e5).toISOString().slice(0, 10);
 
-const FORM = { tarikh: daysAgo(1), jenis: 'Makan', pax: 2, keterangan: 'Makan tengah hari site', amaun_rm: 48.5, resit: { data: PNG_B64 } };
+const FORM = { tarikh: daysAgo(1), jenis: 'Makan & Minuman', pax: 2, keterangan: 'Makan tengah hari site', amaun_rm: 48.5, resit: { data: PNG_B64 } };
 
 async function call(gas, user, action, payload) {
   const body = JSON.stringify(await signEnvelope(CLAIMPRO_SECRET, action, payload, user));
@@ -33,7 +33,7 @@ async function submitted(gas, user = U.ali, over = {}) {
 test('setupSystem: 6 tab, ClaimTypes & Settings di-seed, folder Drive, 3 trigger tanpa pendua', () => {
   const gas = setupClaimProGas();
   assert.deepEqual([...gas.spreadsheet.sheets.keys()].sort(), ['Approvals', 'AuditLog', 'ClaimTypes', 'Claims', 'Settings', '_Counters']);
-  assert.deepEqual(gas.spreadsheet.getSheetByName('ClaimTypes').rows().map((r) => r.jenis), ['Perjalanan', 'Makan', 'Perubatan', 'Penginapan', 'Lain-lain']);
+  assert.deepEqual(gas.spreadsheet.getSheetByName('ClaimTypes').rows().map((r) => r.jenis), ['Perjalanan', 'Makan & Minuman', 'Penginapan', 'Perubatan', 'Keraian', 'Lain-lain']);
   gas.ctx.setupSystem();
   gas.ctx.setupSystem();
   assert.deepEqual(gas.triggers.map((t) => t.handler).sort(), ['dailyArchive', 'dailyReminders', 'monthlyBezaReport']);
@@ -92,13 +92,13 @@ test('Validasi: tarikh masa depan, jenis tak sah, amaun, keterangan, pax, resit 
   assert.equal(r.status, 400);
   assert.match(r.error, /Resit wajib/);
   ok(await call(gas, U.ali, 'saveClaim', { ...FORM, resit: undefined, hantar: false }));   // draf tanpa resit dibenarkan
-  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Makan', had_rm: 30, perlu_resit: true, aktif: true }));
+  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Makan & Minuman', had_rm: 30, perlu_resit: true, aktif: true }));
   r = await call(gas, U.ali, 'saveClaim', { ...FORM, amaun_rm: 48.5, hantar: true });
   assert.equal(r.status, 400);
   assert.match(r.error, /melebihi had/);
-  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Makan', perlu_resit: false, aktif: true }));
+  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Makan & Minuman', perlu_resit: false, aktif: true }));
   ok(await call(gas, U.ali, 'saveClaim', { ...FORM, resit: undefined, hantar: true }));   // resit tak wajib lagi
-  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Makan', perlu_resit: true, aktif: false }));
+  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Makan & Minuman', perlu_resit: true, aktif: false }));
   assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, hantar: false })).status, 400, 'jenis tak aktif');
 });
 
@@ -266,9 +266,9 @@ test('Sahkan bayaran: validasi tarikh/jumlah; jumlah sama -> Dibayar; beza -> be
 
 test('Senarai Lulus belum dibayar (HR), laporan ikut bulan/jenis/status, jumlah dan ringkasan', async () => {
   const gas = setupClaimProGas();
-  const a = await submitted(gas, U.ali, { jenis: 'Makan', amaun_rm: 50 });
+  const a = await submitted(gas, U.ali, { jenis: 'Makan & Minuman', amaun_rm: 50 });
   const b = await submitted(gas, U.abu, { jenis: 'Perjalanan', amaun_rm: 120.25 });
-  const c = await submitted(gas, U.ali, { jenis: 'Makan', amaun_rm: 30 });
+  const c = await submitted(gas, U.ali, { jenis: 'Makan & Minuman', amaun_rm: 30 });
   ok(await call(gas, U.hr, 'decideClaim', { claim_id: a, keputusan: 'Lulus' }));
   ok(await call(gas, U.hr, 'decideClaim', { claim_id: b, keputusan: 'Lulus' }));
   ok(await call(gas, U.hr, 'decideClaim', { claim_id: c, keputusan: 'Ditolak', sebab: 'Duplikat' }));
@@ -284,7 +284,7 @@ test('Senarai Lulus belum dibayar (HR), laporan ikut bulan/jenis/status, jumlah 
   assert.equal(all.bilangan, 3, 'Draf dikecualikan');
   assert.equal(all.jumlah_rm, 200.25);
   assert.deepEqual(all.ikut_status.Lulus, { bilangan: 1, jumlah_rm: 120.25 });
-  assert.deepEqual(all.ikut_jenis.Makan, { bilangan: 2, jumlah_rm: 80 });
+  assert.deepEqual(all.ikut_jenis['Makan & Minuman'], { bilangan: 2, jumlah_rm: 80 });
   assert.equal(ok(await call(gas, U.head, 'claimReport', { jenis: 'Perjalanan' })).bilangan, 1);
   assert.equal(ok(await call(gas, U.head, 'claimReport', { status: 'Dibayar' })).bilangan, 1);
   assert.equal(ok(await call(gas, U.head, 'claimReport', { bulan: daysAgo(1).slice(0, 7) })).bilangan, 3);
