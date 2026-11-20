@@ -1,0 +1,54 @@
+/* AMS - tambahan kecil atas shared/ui/voltake.css */
+.am-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.am-stat { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); }
+.am-stat .label { font-size: 13px; color: var(--muted); }
+.am-stat .v { font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.am-stat.warn { border-left-color: var(--warning); }
+.am-stat.ok { border-left-color: var(--success); }
+.am-list { display: grid; gap: var(--sp-3); }
+.am-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: var(--sp-4); }
+.am-card.warn { border-color: rgba(180, 83, 9, .5); }
+.am-card .top { display: flex; justify-content: space-between; gap: var(--sp-3); align-items: flex-start; flex-wrap: wrap; }
+.am-card .amt { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.am-card .meta { color: var(--muted); font-size: 13px; }
+.am-card .desc { margin: var(--sp-2) 0; overflow-wrap: anywhere; }
+.am-form { display: grid; gap: var(--sp-4); max-width: 640px; }
+.am-grid { display: grid; gap: var(--sp-3); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.am-grid > * { min-width: 0; }
+.am-grid .full { grid-column: 1 / -1; }
+.file-pick { border: 2px dashed var(--border); border-radius: var(--radius-card); padding: var(--sp-4); text-align: center; background: var(--mist); }
+.file-pick.has { border-style: solid; border-color: var(--success); background: rgba(21, 128, 61, .06); }
+.file-pick img { max-width: 100%; max-height: 220px; border-radius: 6px; margin-top: var(--sp-3); }
+.timeline { list-style: none; padding: 0; margin: 0; }
+.timeline li { position: relative; padding: 0 0 var(--sp-3) var(--sp-5); border-left: 2px solid var(--border); margin-left: 6px; }
+.timeline li::before { content: ""; position: absolute; left: -7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--solar-blue); }
+.timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
+.timeline .t { font-size: 13px; color: var(--muted); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px var(--sp-4); margin: 0; }
+.kv dt { color: var(--muted); font-size: 13px; padding-top: 2px; }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 479px) { .kv { grid-template-columns: 1fr; } .kv dd { margin-bottom: var(--sp-2); } }
+.share-img { max-width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--border); }
+.num { font-variant-numeric: tabular-nums; }
+.file-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; text-align: left; }
+.file-list li { display: flex; align-items: center; gap: var(--sp-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: 4px 4px 4px 10px; min-height: var(--tap); flex-wrap: wrap; }
+.file-list li .grow { min-width: 0; overflow-wrap: anywhere; }
+/* AMS: kad lokasi, kotak pilih troli, bar kemajuan audit, gambar aset */
+.am-stat { cursor: default; }
+a.am-stat, button.am-stat { cursor: pointer; text-align: left; font: inherit; color: inherit; text-decoration: none; display: block; width: 100%; }
+a.am-stat:hover, button.am-stat:hover { border-color: var(--solar-blue); }
+.am-stat.bad { border-left-color: var(--danger); }
+.am-stat.info { border-left-color: var(--solar-blue); }
+.am-section { display: grid; gap: var(--sp-3); }
+.am-section h3 { margin: 0; }
+.am-filters { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.am-filters > * { min-width: 0; }
+.am-card.pick { border-color: var(--solar-blue); box-shadow: 0 0 0 2px rgba(37, 99, 235, .35); }
+.am-card.off { opacity: .65; }
+.am-card .sn { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.am-progress { height: 10px; border-radius: 999px; background: var(--mist); border: 1px solid var(--border); overflow: hidden; }
+.am-progress > span { display: block; height: 100%; background: var(--success); }
+.am-cart { position: sticky; bottom: calc(var(--sp-3) + env(safe-area-inset-bottom)); z-index: 5; display: flex; justify-content: flex-end; pointer-events: none; }
+.am-cart .btn { pointer-events: auto; box-shadow: var(--shadow-card); }
+.am-photo { max-width: 100%; max-height: 260px; border-radius: 8px; border: 1px solid var(--border); }
+@media (max-width: 767px) { .am-card .btn-sm, .am-list .btn-sm { min-height: var(--tap); } }

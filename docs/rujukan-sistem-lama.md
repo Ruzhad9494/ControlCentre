@@ -59,3 +59,40 @@ Sumber: `voltake-energy/claimpro` (`Appscript/Code.gs`, `index.html`), dibaca 20
 | Lama | Baharu |
 |---|---|
 | Peringatan tiada | Emel peringatan 14 hari, laporan beza bayaran bulanan (BSD) |
+
+---
+
+## AMS: lama vs baharu
+
+Sumber: `voltake-energy/AMS` (`Appscript/Code.gs`, `index.html`), dibaca 20/11/2026.
+
+### Peraturan yang DIBAWA sama
+
+| Sistem lama | Dalam sistem baharu |
+|---|---|
+| Role ikut designation: Admin (semua + sahkan pulang), Auditor (audit, tiada tambah aset / kalibrasi), lain-lain (lihat + mobiliti) | Role `admin`, `auditor`, `staff` di Admin > Akses modul |
+| Papan pemuka: Jumlah, Masih Aktif, Hampir Luput, Telah Luput; audit bulan ini (Baik / Rosak / Hilang / belum); Tersedia / Dipinjam; kad lokasi; senarai tindakan kalibrasi | Sama. Klik KPI / lokasi menapis senarai aset |
+| Status kalibrasi: Telah Luput (< 0), Lagi Seminggu (≤ 7 hari), Lagi Sebulan (≤ 30), Masih Aktif, Tiada Data | Sama (30 hari boleh diubah dalam Settings) |
+| Lokasi dinormalkan (huruf besar, buang "(...)" dan tarikh di hujung) | Sama (`normLoc_`) untuk kumpulan lokasi |
+| Senarai aset: carian + penapis status kalibrasi / lokasi / pinjaman; CSV `Senarai_Aset_YYYYMMDD.csv` dengan lajur sama | Sama |
+| Tambah/ubah aset (Category, Location, Make, Model, Serial No wajib; sijil PDF; gambar) | Sama; tarikh luput boleh kosong (aset tanpa kalibrasi). No. siri mesti unik (kecuali N/A) |
+| Kalibrasi semula: tarikh kalibrasi, tarikh luput, oleh siapa, sijil wajib; tambah ke CALIBRATION LOG | Sama, ke tab `CalibrationLog` |
+| Audit bulanan: tab Belum / Selesai, kemajuan X / Y (%), Baik satu tekan, Rosak/Hilang wajib catatan + gambar pilihan, tapis Baik / Rosak@Hilang | Sama |
+| Mobiliti: troli beberapa aset, nama peminjam dari login, projek, lokasi, tempoh, keadaan (Baik / Ada kerosakan sedikit) | Sama; tempoh dalam **hari** (lama: teks bebas) supaya pinjaman lewat boleh dikesan |
+| Pulang: tarikh, keadaan Baik / Rosak, Rosak = catatan + gambar wajib → "Menunggu Pengesahan" | Sama |
+| Admin sahkan: kondisi akhir (Baik / Rosak / Hilang Komponen), lokasi akhir → Tersedia, pemegang dikosongkan | Sama |
+
+### Perbezaan yang DISENGAJAKAN
+
+| Lama | Baharu | Sebab |
+|---|---|---|
+| Login ID + kata laluan dari tab `ID PASSWORD` (CSV awam) | Google SSO; tab password **tiada** | TRD 5, PRD R-AMS |
+| Data dibaca dari CSV "Publish to web" | Data melalui Apps Script dengan semakan role | TRD 6 |
+| Pautan Drive fail disimpan dalam Sheet | ID fail sahaja, dibuka melalui portal | TRD 6 |
+| Peminjam dikenal pasti ikut **nama** | Ikut emel sesi; hanya peminjam boleh pulangkan | Elak salah orang / nama sama |
+| Audit timpa lajur MASTERLIST | Setiap audit disimpan (`Audits`) + MASTERLIST simpan terkini | Jejak audit (PRD F-42) |
+| Tiada sekatan pinjam aset luput kalibrasi | Disekat (boleh dimatikan: `sekat_pinjam_luput`) | PRD F-41 "tiada alat luput digunakan" |
+| Tiada emel | Emel admin bila ada pemulangan; laporan Isnin (kalibrasi, pemulangan menunggu, pinjaman lewat); peringatan peminjam lewat | AFD 7 |
+| Admin hanya boleh sahkan bila staf dah tekan pulang | Admin juga boleh "Terima terus" aset yang masih Dipinjam | Pulang tangan ke tangan dan pinjaman dari sistem lama |
+| Profil (tukar kata laluan, gambar profil) | Tiada (akaun Google) | SSO |
+

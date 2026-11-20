@@ -179,6 +179,7 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
     },
     ScriptApp: {
       getProjectTriggers: () => triggers.map((t) => ({ getHandlerFunction: () => t.handler })),
+      WeekDay: { MONDAY: 'MONDAY', TUESDAY: 'TUESDAY', WEDNESDAY: 'WEDNESDAY', THURSDAY: 'THURSDAY', FRIDAY: 'FRIDAY', SATURDAY: 'SATURDAY', SUNDAY: 'SUNDAY' },
       newTrigger: (handler) => {
         const t = { handler };
         const b = {

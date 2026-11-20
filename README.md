@@ -13,7 +13,8 @@ Reka bentuk penuh dalam [`docs/`](docs/): PRD, TRD, AFD, DBD, BSD, IPD. Pelan pe
 | 1 Portal teras | Kod siap (login, sesi, gateway API, dashboard, admin, PWA). Langkah manual: [`docs/setup-fasa1.md`](docs/setup-fasa1.md) |
 | 2A Cost Calculator | Kod siap. Langkah manual: [`docs/setup-fasa2a.md`](docs/setup-fasa2a.md) |
 | 2B ClaimPro | Kod siap: peraturan ikut sistem lama (termasuk ubah/padam), bukti bayaran syarikat, laporan PDF, pelulus Admin HR + Head of HR. Langkah manual: [`docs/setup-fasa2b.md`](docs/setup-fasa2b.md) |
-| 2C-2H Modul | Belum mula |
+| 2C AMS | Kod siap: ikut sistem AMS lama (papan pemuka, kalibrasi, audit bulanan, troli mobiliti), import MASTERLIST. Langkah manual: [`docs/setup-fasa2c.md`](docs/setup-fasa2c.md) |
+| 2D-2H Modul | Belum mula |
 
 Keputusan pemilik (20/11/2026): mulai Fasa 2A, setiap modul disetup terus ke **production** (tiada Sheet/Apps Script staging). Ujian dibuat dengan data sebenar sebelum modul dibuka kepada semua (`Modules.status = aktif`).
 

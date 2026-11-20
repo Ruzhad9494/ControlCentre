@@ -224,6 +224,8 @@ Dibuang dari versi lama: `StaffToken` (diganti SSO), `ApprovalToken` mentah, `Dr
 
 Tab `ID PASSWORD` lama **tidak wujud** dalam sistem baru.
 
+Nota pelaksanaan Fasa 2C (ikut sistem AMS lama, 20/11/2026): `Assets.status` dipecah kepada `status_pinjaman` (`Tersedia`, `Dipinjam`, `Menunggu pengesahan`) dan audit terkini (`last_audit_date`, `audit_status` `Baik`/`Rosak`/`Hilang`, `audit_remark`, `audit_photo_file_id`) seperti MASTERLIST lama; lupus = padam lembut dengan sebab. Tambahan: `lokasi_asal`, `lokasi_semasa`, `pemegang_email`, `pemegang_nama`, `calib_date`, `catatan`. `Audits` tambah `auditor_nama`, keadaan ikut sistem lama (`Baik`, `Rosak`, `Hilang`). `Movements` tambah `kumpulan` (satu troli), `peminjam_nama`, `catatan_pinjam`, `catatan_pulang`, `approved_by_name`, `keadaan_akhir` (`Baik`, `Rosak`, `Hilang komponen`), `lokasi_akhir`, `peringatan_at`; status `Dipinjam` → `Menunggu pengesahan` → `Selesai`. Tab `Settings` (`portal_url`, `admin_notify_emails`, `amaran_kalibrasi_hari`, `sekat_pinjam_luput`). `asset_no` = No lama (No terakhir + 1 untuk aset baharu). Status kalibrasi dikira, bukan disimpan: Telah Luput / Lagi Seminggu (≤ 7 hari) / Lagi Sebulan (≤ 30) / Masih Aktif / Tiada Data.
+
 ### 3.6 VP-ClaimPro (F-50 hingga F-53)
 
 #### `ClaimTypes`
@@ -348,9 +350,9 @@ C = cipta, R = baca, U = kemas kini, D = soft delete. "sendiri" = rekod `staff_e
 | VP-CostCalc.Rates | admin CRU · user R |
 | VP-CostCalc.Estimates | user CRU (sendiri), R (semua dalam dept) · admin CRUD |
 | VP-GWR.Reports | technician/chargeman CRU (sendiri, U hanya status `Draf`) · engineer/supervisor R (dept) + CRU sendiri · manager R (dept) + D (dengan sebab) · public U medan klien sahaja melalui token sah · viewer R |
-| VP-AMS.Assets, CalibrationLog | admin CRUD · auditor R · staff R (aset `Tersedia` sahaja) |
-| VP-AMS.Audits | auditor CRU · admin R |
-| VP-AMS.Movements | staff C (pinjam), R/U (sendiri: pulang) · admin CRU (lulus pulang) |
+| VP-AMS.Assets, CalibrationLog | admin CRUD (D = lupus lembut) · auditor R · staff R semua aset (ikut sistem lama; tanpa emel pemegang) |
+| VP-AMS.Audits | auditor CR · admin CR (sistem lama: admin juga audit) · staff tiada akses |
+| VP-AMS.Movements | semua role C (pinjam, troli), R/U sendiri (pulang) · admin R semua + U (sahkan pemulangan / terima terus) |
 | VP-ClaimPro.Claims | staff CRUD (sendiri, U/D bila `Draf`, `Dihantar` atau `Ditolak`; dikunci selepas `Lulus`) + U medan `received_*` (sendiri, `Lulus` → `Dibayar`) · admin R semua + U status (`Dihantar` → `Lulus`/`Ditolak`) kecuali tuntutan sendiri dan tuntutan staf HR · ketua seperti admin + boleh tuntutan sendiri dan staf HR; admin/ketua juga U/D tuntutan staf lain pada apa-apa status (ikut peraturan pelulus yang sama, sebab wajib, status & identiti staf kekal, padam lembut dan fail disimpan); admin/ketua **tak boleh** tukar ke `Dibayar` |
 | VP-ClaimPro.ClaimTypes | admin CRU · lain R |
 | VP-Compliance.Vehicles, Chargeman | hr_admin CRUD · pss CRU · staff_self - |
@@ -399,7 +401,7 @@ Senarai `ACTION_ROLES` penuh untuk setiap modul ditulis dalam `apps/<modul>/gas/
 | hr | `HR/Resume`, `HR/Photo` | PDF, JPG/PNG | 5MB | hr_admin, interviewer (dept) melalui `getFile` |
 | claimpro | `ClaimPro/Receipts/YYYY-MM`, `ClaimPro/Payments` (bukti terima staf + bukti bayaran syarikat) | JPG/PNG/HEIC/WEBP/PDF | 10MB sefail, 10 resit | pemilik tuntutan, claimpro `admin`/`ketua` |
 | gwr | `GWR/<dept>/Images`, `Signatures`, `PDF` | JPG/PNG, PDF | 5MB/gambar, 10 gambar | staf pemilik, dept (engineer ke atas) melalui `getFile`. PDF final dihantar sebagai lampiran emel kepada staf & klien (tiada perkongsian Drive) |
-| ams | `AMS/Photos`, `AMS/Certs`, `AMS/Audits` | JPG/PNG/PDF | 8MB | role ams |
+| ams | `AMS/Photos`, `AMS/Certs`, `AMS/Audits`, `AMS/Returns` | JPG/PNG/HEIC/WEBP/PDF | 10MB (sama ClaimPro) | sijil & gambar aset: semua role ams; gambar audit: admin/auditor; gambar pulang: admin + peminjam |
 | compliance | `Compliance/Vehicles`, `Chargeman`, `StaffCerts` | PDF/JPG/PNG | 8MB | hr_admin, pss, pemilik sijil |
 | claimreport | `ClaimReport/DO/YYYY` | PDF, XLSX | - | role claimreport |
 
