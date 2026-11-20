@@ -1,29 +1,31 @@
 /**
  * Actions.gs - web app ClaimPro (F-50 hingga F-53; BSD 3.6, 4.1, 4.2, 4.3; IPD 2B).
  *
- * Role (BSD 4.1): `staff` (semua staf) dan `admin` (HR, Head of Strategic Planner; diberi manual di S-05).
- * Asingan tugas (disahkan pemilik 19/11/2026):
- *   - hanya `admin` ClaimPro boleh lulus/tolak dan buka laporan. `superadmin` portal TIDAK automatik jadi admin ClaimPro
- *   - admin TIDAK boleh lulus tuntutan sendiri
- *   - tuntutan staf department HR hanya boleh diluluskan oleh admin department STRATEGIC (Head of Strategic Planner)
- *   - HANYA staf pemilik boleh sahkan terima bayaran (Lulus -> Dibayar). Admin tak boleh tukar ke Dibayar
- * Skop data: staf nampak tuntutan sendiri sahaja; admin nampak semua. Emel staf tak didedah kepada staf/admin lain
- * (paparan guna nama + no. pekerja).
+ * Role (BSD 4.1, dikemas kini pemilik 20/11/2026):
+ *   `staff`  semua staf: buat tuntutan sendiri
+ *   `admin`  Admin HR: lulus/tolak, laporan, senarai bayaran
+ *   `ketua`  Head of HR: semua kuasa `admin` + BOLEH lulus tuntutan sendiri dan tuntutan staf HR
+ * Asingan tugas:
+ *   - `admin` TIDAK boleh lulus tuntutan sendiri; hanya `ketua` boleh
+ *   - tuntutan staf department HR hanya boleh diluluskan `ketua` (Admin HR tak lulus tuntutan rakan sendiri)
+ *   - HANYA staf pemilik boleh sahkan terima bayaran (Lulus -> Dibayar). Admin/ketua tak boleh tukar ke Dibayar
+ *   - `superadmin` portal TIDAK automatik pelulus: beri role `admin`/`ketua` di S-05 (direkod dalam AccessChangeLog)
+ * Skop data: staf nampak tuntutan sendiri sahaja; admin/ketua nampak semua. Emel staf tak didedah (paparan nama + no. pekerja).
  */
 
 var ACTION_ROLES = {
-  listClaimTypes:  ['staff', 'admin'],
-  saveClaimType:   ['admin'],
-  listMyClaims:    ['staff', 'admin'],
-  getClaim:        ['staff', 'admin'],
-  saveClaim:       ['staff', 'admin'],
-  deleteClaim:     ['staff', 'admin'],
-  getFile:         ['staff', 'admin'],
-  confirmReceived: ['staff', 'admin'],
-  listPending:     ['admin'],
-  decideClaim:     ['admin'],
-  listToPay:       ['admin'],
-  claimReport:     ['admin']
+  listClaimTypes:  ['staff', 'admin', 'ketua'],
+  saveClaimType:   ['admin', 'ketua'],
+  listMyClaims:    ['staff', 'admin', 'ketua'],
+  getClaim:        ['staff', 'admin', 'ketua'],
+  saveClaim:       ['staff', 'admin', 'ketua'],
+  deleteClaim:     ['staff', 'admin', 'ketua'],
+  getFile:         ['staff', 'admin', 'ketua'],
+  confirmReceived: ['staff', 'admin', 'ketua'],
+  listPending:     ['admin', 'ketua'],
+  decideClaim:     ['admin', 'ketua'],
+  listToPay:       ['admin', 'ketua'],
+  claimReport:     ['admin', 'ketua']
 };
 
 var LIMITS = { keterangan: 500, sebab: 300, amaun: 1000000, pax: 1000, jenis_min: 2, jenis_max: 40, laporan_baris: 2000 };
@@ -61,9 +63,12 @@ function routeClaimPro_(req) {
 
 // ---------------------------------------------------------------- bantuan
 
-function hasAdmin_(user) { return (user.roles || []).indexOf('admin') >= 0; }
+function hasRoleCp_(user, role) { return (user.roles || []).indexOf(role) >= 0; }
+function isKetua_(user) { return hasRoleCp_(user, 'ketua'); }
+/** Pelulus ClaimPro: Admin HR atau Head of HR. */
+function hasAdmin_(user) { return hasRoleCp_(user, 'admin') || isKetua_(user); }
 
-/** Admin ClaimPro sebenar. `superadmin` sahaja TIDAK cukup (asingan tugas). */
+/** Pelulus ClaimPro sebenar (`admin` atau `ketua`). `superadmin` sahaja TIDAK cukup (asingan tugas). */
 function requireAdmin_(user, action) {
   if (!hasAdmin_(user)) {
     audit_(user.email, 'FORBIDDEN', action, '');
@@ -351,10 +356,9 @@ function getFile_(ss, user, p) {
 
 /** Sebab admin ini tak boleh lulus tuntutan tu. '' = boleh. Digunakan oleh senarai DAN keputusan (satu sumber). */
 function cannotApproveReason_(claim, user) {
-  if (String(claim.staff_email) === String(user.email)) return 'Tuntutan sendiri tak boleh diluluskan oleh anda';
-  if (String(claim.department) === 'HR' && String(user.department) !== 'STRATEGIC') {
-    return 'Tuntutan staf HR hanya boleh diluluskan Head of Strategic Planner';
-  }
+  if (isKetua_(user)) return '';   // Head of HR: semua, termasuk tuntutan sendiri
+  if (String(claim.staff_email) === String(user.email)) return 'Tuntutan sendiri hanya boleh diluluskan Head of HR';
+  if (String(claim.department) === 'HR') return 'Tuntutan staf HR hanya boleh diluluskan Head of HR';
   return '';
 }
 

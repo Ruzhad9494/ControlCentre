@@ -250,13 +250,13 @@ Tab `ID PASSWORD` lama **tidak wujud** dalam sistem baru.
 | approved_by_name | text | tidak | Nama pelulus untuk paparan; emel pelulus kekal dalam `approved_by` (tambahan Fasa 2B) |
 | peringatan_at | datetime | tidak | Masa peringatan "sahkan terima bayaran" terakhir dihantar; ulang setiap 7 hari (tambahan Fasa 2B) |
 
-Nota pelaksanaan Fasa 2B: peraturan "claim staf HR hanya boleh diluluskan Head of Strategic Planner" dikuatkuasa melalui **department**, bukan nama: pelulus mesti ada `department` = `STRATEGIC` bila pemohon `department` = `HR`. Jadi `Staff.department` HR dan Head of Strategic Planner mesti betul di VP-Access. `superadmin` portal bukan automatik Admin ClaimPro (mesti diberi role `admin` di S-05). Setiap bacaan resit/bukti direkod dalam `AuditLog` (`VIEW_FILE`). Laporan (S-54) membaca tab `Claims` sahaja; tuntutan yang dah diarkib (`Archive_YYYY`) tak termasuk.
+Nota pelaksanaan Fasa 2B (peraturan pemilik 20/11/2026): pelulus ialah `admin` (Admin HR) dan `ketua` (Head of HR). `admin` tak boleh lulus tuntutan sendiri dan tak boleh lulus tuntutan staf `department` = `HR`; hanya `ketua` boleh, termasuk tuntutan `ketua` sendiri. Sistem tak membaca `designation`; kuasa ditentukan oleh role di S-05. `superadmin` portal bukan automatik pelulus (beri role `admin`/`ketua` di S-05 jika perlu, dan ia direkod dalam AccessChangeLog). Setiap bacaan resit/bukti direkod dalam `AuditLog` (`VIEW_FILE`). Laporan (S-54) membaca tab `Claims` sahaja; tuntutan yang dah diarkib (`Archive_YYYY`) tak termasuk.
 
 Asingan tugas ClaimPro: Admin (HR, Head of Strategic Planner) lulus; HR buat pindahan wang di luar sistem berdasarkan senarai "Lulus, belum dibayar"; staf sendiri sahkan terima. Oleh sebab HR boleh lulus dan bayar, server tolak Admin lulus claim sendiri, dan claim staf HR hanya boleh diluluskan oleh Head of Strategic Planner (semakan: `approved_by` bukan dari department HR jika `staff.department` = HR). Laporan bulanan beza bayaran dihantar ke Head of Strategic Planner.
 | + medan audit | | | |
 
 #### `Settings` (tambahan Fasa 2B)
-`key`, `value`, `nota`. Bukan rahsia: `portal_url` (pautan dalam emel), `admin_notify_emails` (penerima emel "tuntutan baru" dan "beza bayaran", pisah koma), `head_report_email` (laporan bulanan beza bayaran), `reminder_hari` (lalai 14).
+`key`, `value`, `nota`. Bukan rahsia: `portal_url` (pautan dalam emel), `admin_notify_emails` (penerima emel "tuntutan baru" dan "beza bayaran", pisah koma), `head_report_email` (laporan bulanan beza bayaran, Head of HR), `reminder_hari` (lalai 14).
 
 #### `Approvals`
 `id`, `claim_id`, `dari_status`, `ke_status`, `oleh_email`, `ts`, `catatan`. Satu baris setiap peralihan.
@@ -319,7 +319,7 @@ Admin tetapkan akses setiap staf secara manual di S-05. Jadual di bawah ialah **
 | costcalc | `user`, `admin` | Commercial, PSS, OMP → `user`; ketua Commercial → `admin` (disahkan pemilik 19/11/2026) |
 | gwr | `manager`, `supervisor`, `engineer`, `chargeman`, `technician` | Pasukan OMP & PSS ikut tahap masing-masing (skop `dept=OMP/PSS`) |
 | ams | `admin`, `auditor`, `staff` | Admin aset → `admin`; auditor → `auditor`; peminjam aset → `staff` |
-| claimpro | `staff`, `admin` | Semua staf → `staff`. HR dan Head of Strategic Planner → `staff,admin` (lulus/tolak, laporan, senarai untuk bayaran) |
+| claimpro | `staff`, `admin`, `ketua` | Semua staf → `staff`. Admin HR → `staff,admin` (lulus/tolak, laporan, senarai bayaran). Head of HR → `staff,ketua` (kuasa `admin` + boleh lulus tuntutan sendiri dan tuntutan staf HR). Dikemas kini pemilik 20/11/2026: Head of Strategic Planner bukan lagi pelulus |
 | compliance | `hr_admin`, `pss`, `staff_self` | HR → `hr_admin`; PSS → `pss`; semua staf → `staff_self` |
 | claimreport | `user`, `admin` | Strategic Planning → `user`; Head of Strategic Planner → `admin` |
 | voltrack | `admin`, `commercial`, `operation`, `claim`, `lod` | Commercial → `commercial`; Manager of Power System Solutions & Manager of Operation Maintenance and Performance → `operation`; HR → `claim,lod`; Account → `lod`; `admin` ikut keputusan pemilik |
@@ -348,7 +348,7 @@ C = cipta, R = baca, U = kemas kini, D = soft delete. "sendiri" = rekod `staff_e
 | VP-AMS.Assets, CalibrationLog | admin CRUD · auditor R · staff R (aset `Tersedia` sahaja) |
 | VP-AMS.Audits | auditor CRU · admin R |
 | VP-AMS.Movements | staff C (pinjam), R/U (sendiri: pulang) · admin CRU (lulus pulang) |
-| VP-ClaimPro.Claims | staff CRUD (sendiri, U/D hanya `Draf`) + U medan `received_*` (sendiri, `Lulus` → `Dibayar`) · admin R semua + U status (`Dihantar` → `Lulus`/`Ditolak`) kecuali tuntutan sendiri; admin **tak boleh** tukar ke `Dibayar` |
+| VP-ClaimPro.Claims | staff CRUD (sendiri, U/D hanya `Draf`) + U medan `received_*` (sendiri, `Lulus` → `Dibayar`) · admin R semua + U status (`Dihantar` → `Lulus`/`Ditolak`) kecuali tuntutan sendiri dan tuntutan staf HR · ketua seperti admin + boleh tuntutan sendiri dan staf HR; admin/ketua **tak boleh** tukar ke `Dibayar` |
 | VP-ClaimPro.ClaimTypes | admin CRU · lain R |
 | VP-Compliance.Vehicles, Chargeman | hr_admin CRUD · pss CRU · staff_self - |
 | VP-Compliance.StaffCerts | hr_admin CRUD · pss R · staff_self CRU (sendiri sahaja, `staff_email` = sesi) |

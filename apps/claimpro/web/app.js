@@ -13,7 +13,7 @@ let ctx;
 let view;
 let types = null;
 
-const isAdmin = () => ctx.roles.includes('admin');
+const isAdmin = () => ctx.roles.includes('admin') || ctx.roles.includes('ketua');
 const STATUS_KIND = { Draf: '', Dihantar: 'info', Lulus: 'success', Ditolak: 'danger', Dibayar: 'success' };
 const REMIND_DAYS = 14;
 

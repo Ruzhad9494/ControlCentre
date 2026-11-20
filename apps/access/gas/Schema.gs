@@ -50,7 +50,7 @@ var MODULE_SEED = [
   ['costcalc',    'Cost Calculator',   '/costcalculator/',   'calculator',      'Commercial & PSS',   'user,admin',                                        2],
   ['gwr',         'GWR',               '/gwr/',              'hard-hat', 'OMP & PSS',          'manager,supervisor,engineer,chargeman,technician',  3],
   ['ams',         'AMS',               '/ams/',              'shield-check',         'Asset Management',   'admin,auditor,staff',                               4],
-  ['claimpro',    'ClaimPro',          '/claimpro/',         'receipt',         'All Staff',          'staff,admin',                                       5],
+  ['claimpro',    'ClaimPro',          '/claimpro/',         'receipt',         'All Staff',          'staff,admin,ketua',                                 5],
   ['compliance',  'Compliance Track',  '/compliance-track/', 'badge-check',    'HR & PSS',           'hr_admin,pss,staff_self',                           6],
   ['claimreport', 'ClaimReport',       '/claimreport/',      'chart-column',       'Strategic Planning', 'user,admin',                                        7],
   ['voltrack',    'Voltrack',          '/voltrack/',         'trending-up',     'Project Tracking',   'admin,commercial,operation,claim,lod',              8]

@@ -9,8 +9,8 @@ const U = {
   abu: { email: 'abu@gmail.com', nama: 'Abu Engineer', staff_id: 'VE11', department: 'OMP', roles: ['staff'] },
   hr: { email: 'hr@voltake.com', nama: 'Siti HR', staff_id: 'VE20', department: 'HR', roles: ['staff', 'admin'] },
   hr2: { email: 'hr2@voltake.com', nama: 'Rina HR', staff_id: 'VE21', department: 'HR', roles: ['staff', 'admin'] },
-  head: { email: 'head@voltake.com', nama: 'Head Strategic', staff_id: 'VE30', department: 'STRATEGIC', roles: ['staff', 'admin'] },
-  sp: { email: 'sp@voltake.com', nama: 'Staf Strategic', staff_id: 'VE31', department: 'STRATEGIC', roles: ['staff'] },
+  head: { email: 'head@voltake.com', nama: 'Head HR', staff_id: 'VE30', department: 'HR', roles: ['staff', 'ketua'] },
+  sp: { email: 'sp@voltake.com', nama: 'Head Strategic', staff_id: 'VE31', department: 'STRATEGIC', roles: ['staff'] },
   sup: { email: 'boss@voltake.com', nama: 'Superadmin', staff_id: 'VE01', department: 'MGMT', roles: ['superadmin', 'staff'] },
   view: { email: 'v@voltake.com', nama: 'Viewer', staff_id: 'VE02', department: 'MGMT', roles: ['viewer'] },
   none: { email: 'x@voltake.com', nama: 'Tiada', staff_id: 'VE03', department: 'ACCOUNT', roles: [] },
@@ -174,22 +174,28 @@ test('HR cuba lulus claim: hanya Admin; staf biasa 403; admin lulus -> status Lu
   assert.equal((await call(gas, U.hr, 'decideClaim', { claim_id: id, keputusan: 'Ditolak', sebab: 'salah' })).status, 409, 'sudah diputuskan');
 });
 
-test('Admin lulus claim sendiri ditolak; claim staf HR hanya oleh admin Strategic; claim Head oleh HR', async () => {
+test('Peraturan 20/11/2026: Admin HR tak lulus claim sendiri / rakan HR; Head of HR (ketua) boleh semua termasuk sendiri', async () => {
   const gas = setupClaimProGas();
   const own = await submitted(gas, U.hr);
-  const r = await call(gas, U.hr, 'decideClaim', { claim_id: own, keputusan: 'Lulus' });
+  let r = await call(gas, U.hr, 'decideClaim', { claim_id: own, keputusan: 'Lulus' });
   assert.equal(r.status, 403);
-  assert.match(r.error, /sendiri/);
-  assert.equal((await call(gas, U.hr2, 'decideClaim', { claim_id: own, keputusan: 'Lulus' })).status, 403, 'HR lain tak boleh lulus claim staf HR');
-  assert.match((await call(gas, U.hr2, 'decideClaim', { claim_id: own, keputusan: 'Lulus' })).error, /Head of Strategic Planner/);
-  assert.equal(ok(await call(gas, U.head, 'decideClaim', { claim_id: own, keputusan: 'Lulus' })).status, 'Lulus');
+  assert.match(r.error, /sendiri hanya boleh diluluskan Head of HR/);
+  r = await call(gas, U.hr2, 'decideClaim', { claim_id: own, keputusan: 'Lulus' });
+  assert.equal(r.status, 403, 'Admin HR lain tak boleh lulus claim rakan HR');
+  assert.match(r.error, /staf HR hanya boleh diluluskan Head of HR/);
+  assert.equal(ok(await call(gas, U.head, 'decideClaim', { claim_id: own, keputusan: 'Lulus' })).status, 'Lulus', 'Head of HR lulus claim Admin HR');
 
   const headClaim = await submitted(gas, U.head);
-  assert.equal((await call(gas, U.head, 'decideClaim', { claim_id: headClaim, keputusan: 'Lulus' })).status, 403);
-  assert.equal(ok(await call(gas, U.hr, 'decideClaim', { claim_id: headClaim, keputusan: 'Lulus' })).status, 'Lulus');
+  assert.equal((await call(gas, U.hr, 'decideClaim', { claim_id: headClaim, keputusan: 'Lulus' })).status, 403, 'Admin HR tak lulus claim Head (staf HR)');
+  assert.equal(ok(await call(gas, U.head, 'decideClaim', { claim_id: headClaim, keputusan: 'Lulus' })).status, 'Lulus', 'Head of HR lulus claim sendiri');
 
   const spClaim = await submitted(gas, U.sp);
-  assert.equal(ok(await call(gas, U.head, 'decideClaim', { claim_id: spClaim, keputusan: 'Lulus' })).status, 'Lulus', 'Head lulus staf Strategic biasa');
+  assert.equal((await call(gas, U.sp, 'decideClaim', { claim_id: spClaim, keputusan: 'Lulus' })).status, 403, 'Strategic bukan lagi pelulus');
+  assert.equal(ok(await call(gas, U.hr, 'decideClaim', { claim_id: spClaim, keputusan: 'Lulus' })).status, 'Lulus', 'Admin HR lulus claim staf bukan HR');
+
+  // ketua sahaja (tanpa role admin) boleh buka skrin pelulus
+  assert.equal(ok(await call(gas, U.head, 'listToPay', {})).tuntutan.length, 3);
+  assert.equal((await call(gas, U.head, 'claimReport', {})).ok, true);
 });
 
 test('Senarai kelulusan memaparkan boleh_lulus dan sebab (satu sumber dengan keputusan)', async () => {
@@ -201,7 +207,7 @@ test('Senarai kelulusan memaparkan boleh_lulus dan sebab (satu sumber dengan kep
   assert.deepEqual(asHr.map((c) => [c.staff_name, c.boleh_lulus]).sort(), [['Ali Technician', true], ['Siti HR', false]]);
   assert.match(asHr.find((c) => c.staff_name === 'Siti HR').sebab_tak_boleh, /sendiri/);
   const asHead = ok(await call(gas, U.head, 'listPending', {}));
-  assert.deepEqual(asHead.map((c) => c.boleh_lulus), [true, true]);
+  assert.deepEqual(asHead.map((c) => c.boleh_lulus), [true, true], 'Head of HR boleh lulus kedua-duanya');
 });
 
 test('Tolak: sebab wajib, emel staf bawa sebab; staf nampak sebab; tak boleh diubah lagi', async () => {

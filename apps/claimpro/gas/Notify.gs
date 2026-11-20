@@ -82,7 +82,7 @@ function dailyReminders() {
   return sent;
 }
 
-/** Bulanan (1hb 8:00): laporan beza bayaran bulan lepas kepada Head of Strategic Planner (BSD 3.6). */
+/** Bulanan (1hb 8:00): laporan beza bayaran bulan lepas kepada Settings.head_report_email (Head of HR). */
 function monthlyBezaReport() {
   var ss = SpreadsheetApp.openById(prop_('SPREADSHEET_ID'));
   var s = settingsMap_(ss);
