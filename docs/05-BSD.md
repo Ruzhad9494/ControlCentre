@@ -245,9 +245,18 @@ Tab `ID PASSWORD` lama **tidak wujud** dalam sistem baru.
 | approved_by, approved_at, sebab_tolak | | | Admin ClaimPro sahaja; `approved_by` ≠ `staff_email` |
 | received_date, received_amount_rm, received_proof_file_id | | | Diisi oleh **staf pemilik claim sahaja**, hanya bila status `Lulus`. `received_date` tak boleh sebelum `approved_at` atau masa depan |
 | beza_bayaran | bool | ya | FALSE; server set TRUE jika `received_amount_rm` ≠ `amaun_rm` dan emel Admin |
+| staff_id | text | ya | No. pekerja dari VP-Access semasa hantar (paparan; tambahan Fasa 2B) |
+| submitted_at | datetime | tidak | Masa dihantar (tambahan Fasa 2B) |
+| approved_by_name | text | tidak | Nama pelulus untuk paparan; emel pelulus kekal dalam `approved_by` (tambahan Fasa 2B) |
+| peringatan_at | datetime | tidak | Masa peringatan "sahkan terima bayaran" terakhir dihantar; ulang setiap 7 hari (tambahan Fasa 2B) |
+
+Nota pelaksanaan Fasa 2B: peraturan "claim staf HR hanya boleh diluluskan Head of Strategic Planner" dikuatkuasa melalui **department**, bukan nama: pelulus mesti ada `department` = `STRATEGIC` bila pemohon `department` = `HR`. Jadi `Staff.department` HR dan Head of Strategic Planner mesti betul di VP-Access. `superadmin` portal bukan automatik Admin ClaimPro (mesti diberi role `admin` di S-05). Setiap bacaan resit/bukti direkod dalam `AuditLog` (`VIEW_FILE`). Laporan (S-54) membaca tab `Claims` sahaja; tuntutan yang dah diarkib (`Archive_YYYY`) tak termasuk.
 
 Asingan tugas ClaimPro: Admin (HR, Head of Strategic Planner) lulus; HR buat pindahan wang di luar sistem berdasarkan senarai "Lulus, belum dibayar"; staf sendiri sahkan terima. Oleh sebab HR boleh lulus dan bayar, server tolak Admin lulus claim sendiri, dan claim staf HR hanya boleh diluluskan oleh Head of Strategic Planner (semakan: `approved_by` bukan dari department HR jika `staff.department` = HR). Laporan bulanan beza bayaran dihantar ke Head of Strategic Planner.
 | + medan audit | | | |
+
+#### `Settings` (tambahan Fasa 2B)
+`key`, `value`, `nota`. Bukan rahsia: `portal_url` (pautan dalam emel), `admin_notify_emails` (penerima emel "tuntutan baru" dan "beza bayaran", pisah koma), `head_report_email` (laporan bulanan beza bayaran), `reminder_hari` (lalai 14).
 
 #### `Approvals`
 `id`, `claim_id`, `dari_status`, `ke_status`, `oleh_email`, `ts`, `catatan`. Satu baris setiap peralihan.
@@ -426,7 +435,7 @@ function setupSystem() {
 | costcalc | Rates, Estimates, AuditLog, _Counters | `Rates` dengan `rate_key` sahaja, nilai kosong (diisi Commercial) | status | - |
 | gwr | Reports, Settings, AuditLog, _Counters | Settings kunci template | dept, status, job_shutdown, ptw | Harian: tandakan `Luput` token tamat |
 | ams | Assets, CalibrationLog, Audits, Movements, AuditLog, _Counters | - | status, keadaan | Isnin 8:00 kalibrasi luput |
-| claimpro | ClaimTypes, Claims, Approvals, AuditLog, _Counters | Senarai `ClaimTypes` | jenis, status | Harian 2:00 arkib |
+| claimpro | ClaimTypes, Claims, Approvals, Settings, AuditLog, _Counters | `ClaimTypes` (5 jenis awal), `Settings` | jenis, status | Harian 2:00 arkib; harian 9:00 peringatan; bulanan 1hb 8:00 laporan beza bayaran |
 | compliance | Vehicles, Chargeman, StaffCerts, JobLog, AuditLog, _Counters | - | jenis | Isnin 8:00 peringatan luput |
 | claimreport | DeliveryOrders, Parties, Template, AuditLog, _Counters | Template disalin dari fail lama (manual, sekali) | - | - |
 | voltrack | Commercial, Operation, Claim, LOD, AuditLog, _Counters | - | status_quotation, status_job, payment_status, case_status | Harian: kira `overdue_days` |
@@ -444,7 +453,7 @@ Keputusan muktamad perlukan Q-04. Cadangan: **mula bersih 2027, bawa master data
 | costcalc | Tiada (sistem lama tiada data) | - | Commercial isi `Rates` |
 | gwr | Report status `Menunggu klien` | Report lama (kekal dalam Sheet lama, read-only) | Jana token baru untuk klien yang belum sign |
 | ams | Semua aset aktif + kalibrasi terkini | Log audit lama (arkib) | Import `MASTERLIST` ke `Assets`, petakan lajur: No→asset_no, Category→kategori, Make, Model, Serial No, Location→lokasi, Expired Date→calib_expiry |
-| claimpro | Tuntutan belum `Dibayar` | Tuntutan dibayar (kekal dalam Sheet lama) | Petakan "ID Tuntutan"→claim_id (prefix `OLD-`), "Nama Pekerja"→staff_email (melalui jadual nama ke email) |
+| claimpro | Tuntutan belum `Dibayar` (**belum dibina**: perlu struktur Sheet lama, dibuat selepas Fasa 2B live) | Tuntutan dibayar (kekal dalam Sheet lama) | Petakan "ID Tuntutan"→claim_id (prefix `OLD-`), "Nama Pekerja"→staff_email (melalui jadual nama ke email) |
 | compliance | Semua kenderaan, chargeman, sijil aktif | Baris dipadam | Tukar format lebar `cert` ke format panjang `StaffCerts` |
 | claimreport | Senarai `Parties` (alamat unik) | DO lama (kekal) | Ekstrak from/to unik |
 | voltrack | Projek belum tutup (semua 4 tab) | Projek tutup | Salin baris ikut `id`; buang tab Users |

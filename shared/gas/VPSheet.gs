@@ -47,10 +47,14 @@ function isDeleted_(row) {
   return String(row.deleted).toUpperCase() === 'TRUE';
 }
 
-/** Tambah satu baris ikut header. Nilai dari obj disanitize. */
+/**
+ * Tambah satu baris ikut header. Nilai dari obj disanitize.
+ * Guna appendRow (atom): getLastRow()+1 lalu setValues boleh menimpa baris yang sama bila dua
+ * pelaksanaan serentak (contoh dua tulisan AuditLog tanpa kunci).
+ */
 function appendObj_(sh, header, obj) {
   var line = header.map(function (h) { return Object.prototype.hasOwnProperty.call(obj, h) ? sanitizeForSheet(obj[h]) : ''; });
-  sh.getRange(sh.getLastRow() + 1, 1, 1, header.length).setValues([line]);
+  sh.appendRow(line);
 }
 
 /** Kemas kini medan tertentu pada baris rowNum. Nilai disanitize. */
@@ -62,10 +66,27 @@ function updateObj_(sh, header, rowNum, fields) {
   });
 }
 
+/**
+ * Kemas kini banyak medan pada satu baris dengan SATU panggilan baca + SATU tulis
+ * (updateObj_ buat satu panggilan setiap medan: perlahan untuk baris lebar).
+ */
+function updateRowObj_(sh, header, rowNum, fields) {
+  var range = sh.getRange(rowNum, 1, 1, header.length);
+  var vals = range.getValues()[0];
+  Object.keys(fields).forEach(function (k) {
+    var col = header.indexOf(k);
+    if (col < 0) throw new Error('Lajur tiada: ' + k);
+    vals[col] = sanitizeForSheet(fields[k]);
+  });
+  range.setValues([vals]);
+}
+
 /** ID berjujukan <PREFIX>-<YYYY>-<NNNNN> guna tab _Counters + LockService (BSD 1). */
 function nextId_(ss, prefix, width) {
+  // Jangan lepaskan kunci milik pemanggil: simpan hasLock() dahulu (pepijat Fasa 2A dibetulkan)
   var lock = LockService.getScriptLock();
-  lock.waitLock(10000);
+  var held = lock.hasLock();
+  if (!held) lock.waitLock(10000);
   try {
     var sh = sheet_(ss, '_Counters');
     var year = Utilities.formatDate(new Date(), VP_TZ, 'yyyy');
@@ -79,6 +100,6 @@ function nextId_(ss, prefix, width) {
     while (num.length < (width || 5)) num = '0' + num;
     return key + '-' + num;
   } finally {
-    lock.releaseLock();
+    if (!held) lock.releaseLock();
   }
 }

@@ -242,7 +242,7 @@ function staffPublic_(r) {
     tarikh_mula: dateStr_(r.tarikh_mula),
     tarikh_tamat: dateStr_(r.tarikh_tamat),
     mfa_disahkan: String(r.mfa_disahkan).toUpperCase() === 'TRUE',
-    last_login_at: r.last_login_at ? String(r.last_login_at) : '',
+    last_login_at: isoStr_(r.last_login_at),
     akaun_terikat: String(r.google_sub || '').trim() !== ''
   };
 }
