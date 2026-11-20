@@ -53,6 +53,9 @@ export async function callGas(url, secret, action, payload, user, { fetchImpl = 
     throw new GasError(502, 'Respons modul tidak sah');
   }
   if (!out || out.ok !== true) {
+    // 401 dari Apps Script = tandatangan/secret tak sepadan (konfigurasi), BUKAN sesi staf tamat.
+    // Jangan pulangkan 401 ke browser, nanti staf dihantar ke login berulang kali.
+    if (out && out.status === 401) throw new GasError(502, 'Konfigurasi modul tidak sepadan (secret). Hubungi IT.');
     const status = out && Number.isInteger(out.status) && out.status >= 400 && out.status < 600 ? out.status : 502;
     throw new GasError(status, (out && out.error) || 'Ralat modul');
   }

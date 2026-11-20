@@ -29,6 +29,7 @@ test('safeUrl sekat javascript:/data:, escapeHtml', () => {
   assert.equal(safeUrl(' JavaScript:alert(1)'), '#');
   assert.equal(safeUrl('data:text/html,x'), '#');
   assert.equal(safeUrl('/claimpro/'), '/claimpro/');
+  assert.equal(safeUrl('blob:https://cc.voltake.com/1234-abcd'), 'blob:https://cc.voltake.com/1234-abcd', 'gambar canvas');
   assert.equal(safeUrl('https://cc.voltake.com/x'), 'https://cc.voltake.com/x');
   assert.equal(escapeHtml('<img src=x onerror=alert(1)>'), '&lt;img src=x onerror=alert(1)&gt;');
 });

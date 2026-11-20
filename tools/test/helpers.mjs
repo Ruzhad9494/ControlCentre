@@ -135,3 +135,27 @@ export function env(extra = {}) {
 export function ctx(request, e = env(), params = {}) {
   return { request, env: e, params, waitUntil: undefined };
 }
+
+// ---------------------------------------------------------------- Apps Script costcalc sebenar
+export const COSTCALC_DIR = path.join(ROOT, 'apps', 'costcalculator', 'gas');
+export const COSTCALC_SECRET = 'c'.repeat(48);
+
+export function setupCostCalcGas() {
+  const gas = loadGas(createGas({
+    props: { SPREADSHEET_ID: 'stg-costcalc', ENV: 'staging', MODULE_SECRET: COSTCALC_SECRET },
+    spreadsheetName: 'VP-STG-CostCalc',
+  }), COSTCALC_DIR);
+  gas.ctx.setupSystem();
+  return gas;
+}
+
+/** Isi kadar terus dalam Sheet mock (nilai ujian, BUKAN kadar sebenar syarikat). */
+export function setRates(gas, values) {
+  const sh = gas.spreadsheet.getSheetByName('Rates');
+  const h = sh.header();
+  sh.data.forEach((r, i) => {
+    if (i === 0) return;
+    const k = r[h.indexOf('rate_key')];
+    if (k in values) r[h.indexOf('nilai_rm')] = values[k];
+  });
+}

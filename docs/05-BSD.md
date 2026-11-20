@@ -163,10 +163,10 @@ Medan **dibuang** berbanding sistem lama (cadangan Q-09): `socso`, `kwsp`, `tel_
 ### 3.3 VP-CostCalc (F-20 hingga F-22)
 
 #### `Rates`
-`rate_key` (unik, contoh `ot_per_hour`, `transport_per_km`, `homestay_per_night`), `label`, `nilai_rm` (number ≥ 0), `unit`, `berkuat_kuasa` (date), + audit. Nilai sebenar diisi oleh Commercial semasa Fasa 0 (bukan dari repo lama yang public).
+`rate_key` (unik: `ot_per_hour`, `transport_per_km`, `makan_per_day_pax`, `homestay_per_night`, `overnight_per_pax`, ikut 5 kadar sistem lama), `label`, `nilai_rm` (number ≥ 0), `unit`, `berkuat_kuasa` (date), + audit. Nilai sebenar diisi oleh admin costcalc di skrin S-22 (bukan dari repo lama yang public). Setiap perubahan direkod dalam `AuditLog` dengan nilai lama.
 
 #### `Estimates`
-`estimate_id` (`EST-2027-00001`), `project_id` (pilihan, rujuk Voltrack), `nama_projek`, `klien`, `lokasi`, `hari`, `manpower`, `mobilisasi_json`, `nilai_po_rm`, `kos_subkon_rm`, `rates_snapshot_json`, `jumlah_kos_rm`, `margin_rm`, `margin_peratus`, `status` (`Draf`, `Muktamad`), + audit. Kiraan dibuat semula di server bila simpan (frontend hanya preview).
+`estimate_id` (`EST-2027-00001`), `project_id` (pilihan, rujuk Voltrack), `nama_projek`, `klien`, `lokasi`, `hari`, `manpower`, `mobilisasi_json`, `nilai_po_rm`, `kos_subkon_rm`, `rates_snapshot_json`, `jumlah_kos_rm`, `margin_rm`, `margin_peratus`, `status` (`Draf`, `Muktamad`), + audit. Kiraan dibuat semula di server bila simpan (frontend hanya preview). `department` (department pencipta, untuk skop "R semua dalam dept" di seksyen 4.2; ditambah semasa Fasa 2A). `mobilisasi_json` simpan tarikh, unit, OT, mileage, SST %, senarai subkon, pecahan kos dan nama pencipta (emel pencipta tidak dipapar kepada staf lain). Estimate `Muktamad` dikunci untuk `user`; `Draf` yang disimpan semula dikira dengan kadar semasa.
 
 ### 3.4 VP-GWR (F-30 hingga F-34)
 
@@ -307,7 +307,7 @@ Admin tetapkan akses setiap staf secara manual di S-05. Jadual di bawah ialah **
 | Modul | Role sah | Panduan: siapa biasanya dapat apa |
 |---|---|---|
 | hr | `hr_admin`, `interviewer` | HR → `hr_admin`; manager yang interview → `interviewer` (skop `dept=`) |
-| costcalc | `user`, `admin` | Commercial, PSS → `user`; ketua Commercial → `admin` |
+| costcalc | `user`, `admin` | Commercial, PSS, OMP → `user`; ketua Commercial → `admin` (disahkan pemilik 19/11/2026) |
 | gwr | `manager`, `supervisor`, `engineer`, `chargeman`, `technician` | Pasukan OMP & PSS ikut tahap masing-masing (skop `dept=OMP/PSS`) |
 | ams | `admin`, `auditor`, `staff` | Admin aset → `admin`; auditor → `auditor`; peminjam aset → `staff` |
 | claimpro | `staff`, `admin` | Semua staf → `staff`. HR dan Head of Strategic Planner → `staff,admin` (lulus/tolak, laporan, senarai untuk bayaran) |
