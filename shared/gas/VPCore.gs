@@ -48,3 +48,12 @@ function dateStr_(v) {
   }
   return String(v).slice(0, 10);
 }
+
+/** Nilai sel masa -> teks ISO (Sheets kadang tukar teks ISO jadi Date). */
+function isoStr_(v) {
+  if (v === '' || v === null || v === undefined) return '';
+  if (Object.prototype.toString.call(v) === '[object Date]') {
+    return Utilities.formatDate(v, VP_TZ, "yyyy-MM-dd'T'HH:mm:ssXXX");
+  }
+  return String(v);
+}

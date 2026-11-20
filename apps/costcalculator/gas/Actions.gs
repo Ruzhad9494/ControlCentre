@@ -233,7 +233,7 @@ function estimatePublic_(r, user, full) {
     jumlah_kos_rm: Number(r.jumlah_kos_rm) || 0,
     margin_rm: Number(r.margin_rm) || 0,
     margin_peratus: Number(r.margin_peratus) || 0,
-    dikemas_kini: r.updated_at ? String(r.updated_at) : ''
+    dikemas_kini: isoStr_(r.updated_at)
   };
   if (full) {
     out.input = {
@@ -271,7 +271,7 @@ function listEstimates_(ss, user, p) {
     if (cari && [r.estimate_id, r.nama_projek, r.klien, r.lokasi].join(' ').toLowerCase().indexOf(cari) < 0) return false;
     return true;
   });
-  rows.sort(function (a, b) { return String(b.updated_at).localeCompare(String(a.updated_at)); });
+  rows.sort(function (a, b) { return isoStr_(b.updated_at).localeCompare(isoStr_(a.updated_at)) || String(b.estimate_id).localeCompare(String(a.estimate_id)); });
   return rows.slice(0, 200).map(function (r) { return estimatePublic_(r, user, false); });
 }
 
@@ -315,7 +315,7 @@ function saveEstimate_(ss, user, p) {
       var mob = JSON.parse(row.mobilisasi_json);
       mob.dibuat_oleh = oldMob.dibuat_oleh || { nama: '', staff_id: '' };
       row.mobilisasi_json = JSON.stringify(mob);
-      updateObj_(sh, t.header, cur._row, Object.assign({}, row, { updated_at: now, updated_by: user.email }));
+      updateRowObj_(sh, t.header, cur._row, Object.assign({}, row, { updated_at: now, updated_by: user.email }));
       audit_(user.email, 'UPDATE', String(cur.estimate_id), 'status=' + status + '; kos=' + hasil.jumlah_kos + '; margin=' + hasil.margin);
       return estimatePublic_(Object.assign({}, cur, row, { updated_at: now }), user, true);
     }

@@ -1,0 +1,32 @@
+/* ClaimPro - tambahan kecil atas shared/ui/voltake.css */
+.cp-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.cp-stat { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); }
+.cp-stat .label { font-size: 13px; color: var(--muted); }
+.cp-stat .v { font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cp-stat.warn { border-left-color: var(--warning); }
+.cp-stat.ok { border-left-color: var(--success); }
+.cp-list { display: grid; gap: var(--sp-3); }
+.cp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: var(--sp-4); }
+.cp-card.warn { border-color: rgba(180, 83, 9, .5); }
+.cp-card .top { display: flex; justify-content: space-between; gap: var(--sp-3); align-items: flex-start; flex-wrap: wrap; }
+.cp-card .amt { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cp-card .meta { color: var(--muted); font-size: 13px; }
+.cp-card .desc { margin: var(--sp-2) 0; overflow-wrap: anywhere; }
+.cp-form { display: grid; gap: var(--sp-4); max-width: 640px; }
+.cp-grid { display: grid; gap: var(--sp-3); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.cp-grid > * { min-width: 0; }
+.cp-grid .full { grid-column: 1 / -1; }
+.file-pick { border: 2px dashed var(--border); border-radius: var(--radius-card); padding: var(--sp-4); text-align: center; background: var(--mist); }
+.file-pick.has { border-style: solid; border-color: var(--success); background: rgba(21, 128, 61, .06); }
+.file-pick img { max-width: 100%; max-height: 220px; border-radius: 6px; margin-top: var(--sp-3); }
+.timeline { list-style: none; padding: 0; margin: 0; }
+.timeline li { position: relative; padding: 0 0 var(--sp-3) var(--sp-5); border-left: 2px solid var(--border); margin-left: 6px; }
+.timeline li::before { content: ""; position: absolute; left: -7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--solar-blue); }
+.timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
+.timeline .t { font-size: 13px; color: var(--muted); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px var(--sp-4); margin: 0; }
+.kv dt { color: var(--muted); font-size: 13px; padding-top: 2px; }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 479px) { .kv { grid-template-columns: 1fr; } .kv dd { margin-bottom: var(--sp-2); } }
+.share-img { max-width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--border); }
+.num { font-variant-numeric: tabular-nums; }

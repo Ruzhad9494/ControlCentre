@@ -256,3 +256,14 @@ test('Validasi input: nombor negatif, tarikh terbalik, teks panjang, formula inj
   assert.equal(gas.spreadsheet.getSheetByName('Estimates').rows()[0].klien, `'=IMPORTXML("http://x")`);
   assert.equal(r.data.klien, '=IMPORTXML("http://x")');
 });
+
+test('Kunci: nextId_ dalam bahagian berkunci tak melepaskan kunci pemanggil (pepijat Fasa 2A)', () => {
+  const gas = setupCostCalcGas();
+  const lock = gas.ctx.LockService.getScriptLock();
+  lock.waitLock(1000);
+  gas.ctx.nextId_(gas.ctx.SpreadsheetApp.openById('stg-costcalc'), 'EST', 5);
+  assert.equal(lock.hasLock(), true, 'kunci pemanggil mesti kekal selepas nextId_');
+  lock.releaseLock();
+  gas.ctx.nextId_(gas.ctx.SpreadsheetApp.openById('stg-costcalc'), 'EST', 5);
+  assert.equal(gas.ctx.LockService.getScriptLock().hasLock(), false, 'tanpa pemanggil berkunci: dilepaskan');
+});
