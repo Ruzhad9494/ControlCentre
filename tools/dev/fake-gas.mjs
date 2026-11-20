@@ -7,7 +7,7 @@
 // GAS_URL_COSTCALC=http://127.0.0.1:<port>/costcalc, secret ujian dari tools/test/helpers.mjs
 // Seed: superadmin + beberapa staf ujian (lihat bawah). Data hilang bila pelayan berhenti.
 import http from 'node:http';
-import { setupAccessGas, addStaff, addAccess, ACCESS_SECRET, setupCostCalcGas, setRates, setupClaimProGas, setupAmsGas } from '../test/helpers.mjs';
+import { setupAccessGas, addStaff, addAccess, ACCESS_SECRET, setupCostCalcGas, setRates, setupClaimProGas, setupAmsGas, setupComplianceGas } from '../test/helpers.mjs';
 
 const port = Number(process.argv[2] || 9100);
 const gas = setupAccessGas();
@@ -28,7 +28,7 @@ addAccess(gas, 'pss.ujian@gmail.com', 'costcalc', 'user');
 // Modul ClaimPro + Cost Calculator "aktif" supaya kad boleh ditekan dalam ujian
 const mods = gas.spreadsheet.getSheetByName('Modules');
 const h = mods.header();
-mods.data.forEach((r, i) => { if (i > 0 && ['claimpro', 'costcalc', 'ams'].includes(r[h.indexOf('module_id')])) r[h.indexOf('status')] = 'aktif'; });
+mods.data.forEach((r, i) => { if (i > 0 && ['claimpro', 'costcalc', 'ams', 'compliance'].includes(r[h.indexOf('module_id')])) r[h.indexOf('status')] = 'aktif'; });
 
 // ClaimPro (Fasa 2B, peraturan 20/11/2026): Siti = Admin HR (`admin`), Head HR = `ketua`; Ali/PSS staf biasa
 addStaff(gas, { staff_id: 'VE0500', email: 'head.ujian@voltake.com', nama: 'Head HR', department: 'HR', designation: 'Manager HR' });
@@ -43,6 +43,10 @@ addAccess(gas, 'aset.ujian@voltake.com', 'ams', 'admin');
 addAccess(gas, 'pss.ujian@gmail.com', 'ams', 'auditor');
 addAccess(gas, 'tech.ujian@gmail.com', 'ams', 'staff');
 
+// Compliance (Fasa 2D): HR = hr_admin (di atas), PSS = pss + staff_self, staf lain = staff_self
+addAccess(gas, 'pss.ujian@gmail.com', 'compliance', 'pss,staff_self');
+addAccess(gas, 'tech.ujian@gmail.com', 'compliance', 'staff_self');
+
 const cc = setupCostCalcGas();
 if (!process.argv.includes('--tanpa-kadar')) {
   // Kadar UJIAN rekaan, bukan kadar syarikat
@@ -50,7 +54,8 @@ if (!process.argv.includes('--tanpa-kadar')) {
 }
 const cp = setupClaimProGas();
 const am = setupAmsGas();
-const projects = { '/access': gas, '/costcalc': cc, '/claimpro': cp, '/ams': am };
+const ct = setupComplianceGas();
+const projects = { '/access': gas, '/costcalc': cc, '/claimpro': cp, '/ams': am, '/compliance': ct };
 
 http.createServer((req, res) => {
   let body = '';
@@ -62,5 +67,5 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' }).end(out.getContent());
   });
 }).listen(port, '127.0.0.1', () => {
-  console.log(`fake-gas: http://127.0.0.1:${port}/access, /costcalc, /claimpro, /ams (secret ujian: ${ACCESS_SECRET.slice(0, 4)}...)`);
+  console.log(`fake-gas: http://127.0.0.1:${port}/access, /costcalc, /claimpro, /ams, /compliance (secret ujian: ${ACCESS_SECRET.slice(0, 4)}...)`);
 });

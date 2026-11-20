@@ -289,6 +289,8 @@ Medan **perlu disahkan** dari tab `Job_Log` lama dalam spreadsheet PSS (kod lama
 
 Nota: imej IC staf (`getIcImages` dalam sistem lama) **tidak** dibawa ke v1.0 kecuali ada keperluan jelas (soalan untuk HR). Jika perlu, hanya `hr_admin` boleh baca.
 
+Nota pelaksanaan Fasa 2D (ikut sistem lama "UniTrack", 20/11/2026): IC **dibawa** kerana sistem lama memerlukannya untuk **Senarai Kerja** (dokumen "DETAILS OF WORKING PERSONNEL" untuk kebenaran masuk tapak: jadual nama / designation / tarikh CIDB / no. IC / no. kompetensi chargeman + salinan IC bertanda "FOR OFFICIAL SITE WORK ONLY" + lampiran sijil). Inilah "Job log" F-64: tab `JobLog` (`job_id`, `tarikh`, `kerja`, `tempat`, `tajuk`, `staff_ids`, `bil_orang`, `sijil`, `dibuat_oleh`, `dibuat_oleh_nama`, `created_at`) merekod setiap Senarai Kerja dijana, sama dengan `Job_Log` lama. Tab baharu `Staff` (`staff_id`, `staff_email`, `nama`, `designation`, `ic_no`, `ic_front_file_id`, `ic_back_file_id`, `ic_consent_version`, `ic_consent_at`, `ic_oleh`) menggantikan lajur IC / IC Attachment / Designation dalam tab Cert lama. `StaffCerts` dikunci pada `staff_id` sesi (sistem lama: ID ditaip). `Vehicles.vehicle_id` / `Chargeman.chargeman_id` ikut `nextId_` (VEH- / CHG-); `Chargeman.staff_id` dipadankan ke staf (lajur ID lama). Jenis sijil `CIDB`, `NIOSH`, `WAH`, `FA`. Tab `Settings` (`portal_url`, `notify_emails`, `amaran_hari` lalai 60, `peringatan_staf`, `company_name`, `company_address`). Padam = padam lembut dengan sebab (sistem lama: arkib `Deleted_Rows`).
+
 ### 3.8 VP-ClaimReport (F-70 hingga F-72)
 
 #### `DeliveryOrders`
@@ -355,9 +357,9 @@ C = cipta, R = baca, U = kemas kini, D = soft delete. "sendiri" = rekod `staff_e
 | VP-AMS.Movements | semua role C (pinjam, troli), R/U sendiri (pulang) · admin R semua + U (sahkan pemulangan / terima terus) |
 | VP-ClaimPro.Claims | staff CRUD (sendiri, U/D bila `Draf`, `Dihantar` atau `Ditolak`; dikunci selepas `Lulus`) + U medan `received_*` (sendiri, `Lulus` → `Dibayar`) · admin R semua + U status (`Dihantar` → `Lulus`/`Ditolak`) kecuali tuntutan sendiri dan tuntutan staf HR · ketua seperti admin + boleh tuntutan sendiri dan staf HR; admin/ketua juga U/D tuntutan staf lain pada apa-apa status (ikut peraturan pelulus yang sama, sebab wajib, status & identiti staf kekal, padam lembut dan fail disimpan); admin/ketua **tak boleh** tukar ke `Dibayar` |
 | VP-ClaimPro.ClaimTypes | admin CRU · lain R |
-| VP-Compliance.Vehicles, Chargeman | hr_admin CRUD · pss CRU · staff_self - |
-| VP-Compliance.StaffCerts | hr_admin CRUD · pss R · staff_self CRU (sendiri sahaja, `staff_email` = sesi) |
-| VP-Compliance.JobLog | pss CRU · hr_admin R |
+| VP-Compliance.Vehicles, Chargeman | hr_admin & pss CRUD (sistem lama: satu PIN admin dikongsi HR & PSS) · staff_self R chargeman sendiri |
+| VP-Compliance.Staff, StaffCerts | hr_admin & pss CRUD · staff_self CRU sijil sendiri (`staff_id` = sesi), IC sendiri C sekali sahaja dengan persetujuan; tak boleh baca semula IC |
+| VP-Compliance.JobLog (Senarai Kerja) | hr_admin & pss CR · IC dibaca hanya dalam Senarai Kerja / borang staf, setiap bacaan direkod `VIEW_IC` |
 | VP-ClaimReport.DeliveryOrders, Parties | user CR + U (sendiri, hari sama) · admin CRUD |
 | VP-Voltrack.* | semua role voltrack R semua tab · `commercial` CU Commercial · `operation` U Operation · `claim` U Claim · `lod` U LOD · `admin` CRUD semua |
 | `<modul>`.AuditLog | sistem C sahaja · superadmin R |
@@ -402,7 +404,7 @@ Senarai `ACTION_ROLES` penuh untuk setiap modul ditulis dalam `apps/<modul>/gas/
 | claimpro | `ClaimPro/Receipts/YYYY-MM`, `ClaimPro/Payments` (bukti terima staf + bukti bayaran syarikat) | JPG/PNG/HEIC/WEBP/PDF | 10MB sefail, 10 resit | pemilik tuntutan, claimpro `admin`/`ketua` |
 | gwr | `GWR/<dept>/Images`, `Signatures`, `PDF` | JPG/PNG, PDF | 5MB/gambar, 10 gambar | staf pemilik, dept (engineer ke atas) melalui `getFile`. PDF final dihantar sebagai lampiran emel kepada staf & klien (tiada perkongsian Drive) |
 | ams | `AMS/Photos`, `AMS/Certs`, `AMS/Audits`, `AMS/Returns` | JPG/PNG/HEIC/WEBP/PDF | 10MB (sama ClaimPro) | sijil & gambar aset: semua role ams; gambar audit: admin/auditor; gambar pulang: admin + peminjam |
-| compliance | `Compliance/Vehicles`, `Chargeman`, `StaffCerts` | PDF/JPG/PNG | 8MB | hr_admin, pss, pemilik sijil |
+| compliance | `Compliance/Vehicles`, `Chargeman`, `StaffCerts`, `IC` | PDF/JPG/PNG/HEIC/WEBP | 10MB | hr_admin, pss, pemilik sijil; folder IC: hr_admin & pss sahaja |
 | claimreport | `ClaimReport/DO/YYYY` | PDF, XLSX | - | role claimreport |
 
 Konvensyen nama: `<record_id>_<jenis>_<YYYYMMDD-HHmmss>.<ext>`, contoh `CLM-2027-00012_resit_20270105-143010.jpg`. Semua folder dimiliki akaun sistem syarikat, tiada "anyone with link", dan **tiada folder atau fail dikongsi terus ke Gmail peribadi staf** (supaya offboard tak tinggalkan salinan). Server semak MIME (senarai dibenarkan) dan saiz sebelum simpan.

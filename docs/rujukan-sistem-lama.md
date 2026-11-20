@@ -96,3 +96,37 @@ Sumber: `voltake-energy/AMS` (`Appscript/Code.gs`, `index.html`), dibaca 20/11/2
 | Admin hanya boleh sahkan bila staf dah tekan pulang | Admin juga boleh "Terima terus" aset yang masih Dipinjam | Pulang tangan ke tangan dan pinjaman dari sistem lama |
 | Profil (tukar kata laluan, gambar profil) | Tiada (akaun Google) | SSO |
 
+---
+
+## Compliance Track: lama vs baharu
+
+Sumber: `voltake-energy/Compliance-Track` ("UniTrack": `apps-script/Code.gs`, `Setup.gs`, `index.html`, `dashboard/`, `senarai/`), dibaca 20/11/2026.
+
+### Peraturan yang DIBAWA sama
+
+| Sistem lama | Dalam sistem baharu |
+|---|---|
+| 4 tab: Kereta, Motosikal, Chargeman, Cert | `Vehicles` (jenis Kereta / Motosikal), `Chargeman`, `Staff` + `StaffCerts` |
+| Status: Tamat (n hari lepas) / Hampir Tamat (≤ ambang) / Sah / Tiada Tarikh; ambang 30 / 60 / 90 (lalai 60) | Sama (pilihan ambang diingat dalam pelayar; lalai server dalam Settings) |
+| Dashboard: Jumlah, Tamat, Hampir Tamat, Sah, kadar pematuhan, kad ikut kategori, senarai segera 10 teratas | Sama |
+| Jadual setiap kategori: carian, penapis status, CSV, kongsi WhatsApp (teks "PERINGATAN PEMATUHAN & PEMBAHARUAN") | Sama |
+| Sijil staf: CIDB, NIOSH (NTSP), Working at Height, First Aid; tarikh + fail setiap satu | Sama, format panjang |
+| Staf kemas kini tarikh & fail sijil sendiri; tarikh kosong tidak menimpa tarikh sedia ada | Sama |
+| Staf hantar IC (no. + gambar depan & belakang) dengan persetujuan v1-2026-11; tak boleh ubah sendiri selepas hantar | Sama (teks persetujuan sama) |
+| Senarai Kerja: tajuk "DETAILS OF WORKING PERSONNEL FOR … WORKS AT …", kepala syarikat, jadual (No, Name, Designation, CIDB Expired Date, IC No, Cert No), satu muka setiap staf dengan IC bertanda "FOR OFFICIAL SITE WORK ONLY" + lampiran sijil; amaran sijil tamat / IC tiada; log ke Job_Log | Sama; cetak / simpan PDF melalui pelayar (A4) |
+| Padam diarkib dahulu (Deleted_Rows) | Padam lembut dengan sebab |
+| IC / NRIC ditapis daripada respons awam | IC hanya ke hr_admin / pss; staf lihat versi bertopeng |
+
+### Perbezaan yang DISENGAJAKAN
+
+| Lama | Baharu | Sebab |
+|---|---|---|
+| Satu PIN admin dikongsi (lalai `admin123`) | Role `hr_admin` / `pss` ikut login Google | PRD R-Compliance, TRD 5 |
+| Staf kemas kini sijil dengan **menaip Staff ID** (sesiapa boleh ubah sijil orang lain) | Staff ID dari sesi | PRD F-62 "staf tak boleh ubah sijil orang lain" |
+| Data dibaca melalui `getAllData` tanpa login | Melalui Apps Script dengan semakan role | TRD 6 |
+| Fail Drive dikongsi "ANYONE_WITH_LINK"; gambar dimuat dari pautan Drive awam | Fail peribadi, dihidang melalui portal; IC dalam folder `IC` berasingan | TRD 6, PDPA |
+| Senarai Kerja: editor gambar (gerak, zum, potong, palang boleh laras) | Gambar dimuat automatik muat kotak; tanda air tetap di tengah setiap sisi IC | Ringkas; editor boleh ditambah jika HR/PSS perlukan |
+| Logo dibenam dalam dokumen | Teks "VOLTAKE" + nama & alamat syarikat dari Settings | Tiada fail logo rasmi dalam repo |
+| Tiada emel | Laporan Isnin (30 / 60 / 90 hari) kepada HR/PSS + peringatan kepada staf yang sijilnya tamat / ≤ 30 hari | PRD F-63 |
+| Backup harian ke folder Drive | Bergantung pada sejarah versi Google Sheets + padam lembut | Kurang bahagian bergerak |
+
