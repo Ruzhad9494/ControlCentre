@@ -12,7 +12,7 @@ Reka bentuk penuh dalam [`docs/`](docs/): PRD, TRD, AFD, DBD, BSD, IPD. Pelan pe
 | 0 Setup repo, Cloudflare, OAuth, VP-Access | Kod siap. Langkah manual: [`docs/setup-fasa0.md`](docs/setup-fasa0.md) |
 | 1 Portal teras | Kod siap (login, sesi, gateway API, dashboard, admin, PWA). Langkah manual: [`docs/setup-fasa1.md`](docs/setup-fasa1.md) |
 | 2A Cost Calculator | Kod siap. Langkah manual: [`docs/setup-fasa2a.md`](docs/setup-fasa2a.md) |
-| 2B ClaimPro | Kod siap. Migrasi tuntutan lama belum dibina (tunggu struktur Sheet lama). Langkah manual: [`docs/setup-fasa2b.md`](docs/setup-fasa2b.md) |
+| 2B ClaimPro | Kod siap: peraturan ikut sistem lama (termasuk ubah/padam), bukti bayaran syarikat, laporan PDF, pelulus Admin HR + Head of HR. Langkah manual: [`docs/setup-fasa2b.md`](docs/setup-fasa2b.md) |
 | 2C-2H Modul | Belum mula |
 
 Keputusan pemilik (20/11/2026): mulai Fasa 2A, setiap modul disetup terus ke **production** (tiada Sheet/Apps Script staging). Ujian dibuat dengan data sebenar sebelum modul dibuka kepada semua (`Modules.status = aktif`).
@@ -52,3 +52,7 @@ bash tools/sync-shared-gas.sh
 - Tiada secret, Spreadsheet ID, URL Apps Script atau data sebenar dalam repo. Secret dalam Cloudflare env + Script Properties sahaja (senarai nama dalam `.env.example`).
 - Semua semakan role di server.
 - Setiap perubahan melalui Pull Request; gitleaks mesti lulus.
+
+## Rujukan sistem lama
+
+Setiap modul dibina dengan merujuk repo sistem lama (arahan pemilik). Senarai repo dan perbandingan lama vs baharu: [`docs/rujukan-sistem-lama.md`](docs/rujukan-sistem-lama.md).

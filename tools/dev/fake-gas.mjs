@@ -30,9 +30,9 @@ const mods = gas.spreadsheet.getSheetByName('Modules');
 const h = mods.header();
 mods.data.forEach((r, i) => { if (i > 0 && ['claimpro', 'costcalc'].includes(r[h.indexOf('module_id')])) r[h.indexOf('status')] = 'aktif'; });
 
-// ClaimPro (Fasa 2B): HR (department HR) dan Head Strategic (department STRATEGIC) ialah admin; Ali/PSS staf biasa
-addStaff(gas, { staff_id: 'VE0500', email: 'head.ujian@voltake.com', nama: 'Head Strategic', department: 'STRATEGIC', designation: 'Head of Strategic Planner' });
-addAccess(gas, 'head.ujian@voltake.com', 'claimpro', 'staff,admin');
+// ClaimPro (Fasa 2B, peraturan 20/11/2026): Siti = Admin HR (`admin`), Head HR = `ketua`; Ali/PSS staf biasa
+addStaff(gas, { staff_id: 'VE0500', email: 'head.ujian@voltake.com', nama: 'Head HR', department: 'HR', designation: 'Manager HR' });
+addAccess(gas, 'head.ujian@voltake.com', 'claimpro', 'staff,ketua');
 addAccess(gas, 'ketua.com@voltake.com', 'claimpro', 'staff');
 addAccess(gas, 'com.ujian@voltake.com', 'claimpro', 'staff');
 addAccess(gas, 'pss.ujian@gmail.com', 'claimpro', 'staff');

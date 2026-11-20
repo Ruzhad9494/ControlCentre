@@ -6,7 +6,7 @@
     "costcalc":    ["user", "admin"],
     "gwr":         ["manager", "supervisor", "engineer", "chargeman", "technician"],
     "ams":         ["admin", "auditor", "staff"],
-    "claimpro":    ["staff", "admin"],
+    "claimpro":    ["staff", "admin", "ketua"],
     "compliance":  ["hr_admin", "pss", "staff_self"],
     "claimreport": ["user", "admin"],
     "voltrack":    ["admin", "commercial", "operation", "claim", "lod"]

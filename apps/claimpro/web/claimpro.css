@@ -30,3 +30,6 @@
 @media (max-width: 479px) { .kv { grid-template-columns: 1fr; } .kv dd { margin-bottom: var(--sp-2); } }
 .share-img { max-width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--border); }
 .num { font-variant-numeric: tabular-nums; }
+.file-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; text-align: left; }
+.file-list li { display: flex; align-items: center; gap: var(--sp-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: 4px 4px 4px 10px; min-height: var(--tap); flex-wrap: wrap; }
+.file-list li .grow { min-width: 0; overflow-wrap: anywhere; }
