@@ -488,4 +488,6 @@ test('callGas: ralat rangkaian / respons bukan JSON jadi 502, status Apps Script
   await assert.rejects(callGas('https://x', 's', 'a', {}, {}, { fetchImpl: async () => { throw new TypeError('net'); } }), (e) => e.status === 502);
   await assert.rejects(callGas('https://x', 's', 'a', {}, {}, { fetchImpl: async () => new Response('<html>') }), (e) => e.status === 502);
   await assert.rejects(callGas('https://x', 's', 'a', {}, {}, { fetchImpl: async () => new Response(JSON.stringify({ ok: false, status: 403, error: 'Tiada kebenaran' })) }), (e) => e.status === 403 && e.message === 'Tiada kebenaran');
+  // Secret salah: Apps Script 401 mesti jadi 502 (bukan 401 yang hantar staf ke login berulang)
+  await assert.rejects(callGas('https://x', 's', 'a', {}, {}, { fetchImpl: async () => new Response(JSON.stringify({ ok: false, status: 401, error: 'Tandatangan tak sah' })) }), (e) => e.status === 502 && /secret/.test(e.message));
 });

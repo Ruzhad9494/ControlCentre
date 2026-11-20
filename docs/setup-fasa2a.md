@@ -1,74 +1,128 @@
-# Setup Fasa 2A - Cost Calculator
+# Setup Fasa 2A - Cost Calculator (production terus)
 
-Kod modul dah ada dalam repo (`apps/costcalculator/`). Langkah di bawah dibuat manual. **Staging dahulu**, kemudian ulang untuk production.
+Mulai Fasa 2A, setup terus ke **production**. Tiada Sheet atau Apps Script staging. Ikut langkah 1 hingga 8 mengikut susunan.
 
 Role (disahkan pemilik 19/11/2026): **Commercial, PSS, OMP → `user`**; **ketua Commercial → `admin`**.
 
-## A. Sheet
+---
 
-Log masuk Drive sebagai `systems@voltake.com`. Cipta Google Sheet kosong bernama tepat **`VP-STG-CostCalc`** (production: `VP-CostCalc`). Jangan kongsi, jangan Publish to web. Salin ID dari URL.
+## Langkah 1 - Merge kod ke `main` (GitHub)
 
-## B. Apps Script `VP-STG-costcalc`
+Cloudflare production hanya ambil kod dari branch `main`.
 
-1. script.google.com > **New project**, namakan `VP-STG-costcalc`.
-2. Buang `Code.gs`. Dari GitHub folder `apps/costcalculator/gas/`, cipta fail dan paste isi (butang Raw):
+1. Buka repo `Ruzhad9494/ControlCentre` di GitHub.
+2. Klik banner **Compare & pull request** untuk branch `claude/compassionate-edison-ouik0h` (atau tab **Pull requests > New pull request**, base `main`, compare branch tu).
+3. **Create pull request**, kemudian **Merge pull request**.
+4. Cloudflare > Workers & Pages > projek > **Deployments**: tunggu deployment Production baharu jadi **Success** (1-2 minit).
 
-   `Actions`, `Calc`, `Config`, `Schema`, `Setup`, `VPAudit`, `VPAuth`, `VPCore`, `VPSheet`, dan `appsscript.json` (Project Settings > tick "Show appsscript.json").
+## Langkah 2 - Cipta Sheet
 
-3. **Project Settings > Script Properties**:
+1. Log masuk Drive sebagai `systems@voltake.com`.
+2. Buka **sheets.new**. Tukar nama kepada tepat **`VP-CostCalc`**.
+3. Biar kosong. Jangan Share, jangan Publish to web.
+4. Salin ID dari URL: `docs.google.com/spreadsheets/d/`**ID-INI**`/edit`.
+
+## Langkah 3 - Cipta Apps Script
+
+1. Buka **script.google.com** > **New project**. Namakan `VP-costcalc`.
+2. **Project Settings** (ikon gear) > tick **Show "appsscript.json" manifest file in editor**.
+3. Kembali ke **Editor**. Fail `Code.gs`: padam isi, kemudian rename jadi `Actions`.
+4. Untuk setiap fail dalam GitHub folder **`apps/costcalculator/gas/`**: buka fail > **Raw** > Ctrl+A, Ctrl+C > paste dalam editor.
+
+| Nama dalam editor | Fail GitHub |
+|---|---|
+| `Actions` | `Actions.gs` |
+| `Calc` | `Calc.gs` |
+| `Config` | `Config.gs` |
+| `Schema` | `Schema.gs` |
+| `Setup` | `Setup.gs` |
+| `VPAudit` | `VPAudit.gs` |
+| `VPAuth` | `VPAuth.gs` |
+| `VPCore` | `VPCore.gs` |
+| `VPSheet` | `VPSheet.gs` |
+| `appsscript.json` | `appsscript.json` (ganti seluruh isi) |
+
+Fail baru: klik **+** di sebelah Files > **Script**, taip nama tanpa `.gs`. Tekan **Ctrl+S** selepas semua siap.
+
+## Langkah 4 - Script Properties
+
+**Project Settings > Script Properties > Add script property**. Tiga sahaja:
 
 | Property | Nilai |
 |---|---|
-| `SPREADSHEET_ID` | ID Sheet dari langkah A |
-| `MODULE_SECRET` | Rentetan rawak baharu, minimum 32 aksara (PowerShell: lihat bawah). **Berbeza** dari `ACCESS_SECRET` |
-| `ENV` | `staging` (production: `prod`) |
+| `SPREADSHEET_ID` | ID dari Langkah 2 |
+| `MODULE_SECRET` | Rentetan rawak baharu (cara jana di bawah). Simpan untuk Langkah 6 |
+| `ENV` | `prod` |
+
+Jana `MODULE_SECRET` dalam PowerShell:
 
 ```powershell
 $b = New-Object byte[] 48; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
 ```
 
-4. Run `checkConfig` (benarkan kebenaran), kemudian `setupSystem`. Log: `setupSystem selesai: VP-STG-CostCalc | Rates (baru) seed=5 | Estimates (baru) | AuditLog (baru) | _Counters (baru)`.
-5. Semak tab `Rates`: 5 baris, lajur `nilai_rm` **kosong**. Itu betul: kadar diisi di portal (langkah E), bukan dalam kod.
-6. **Deploy > New deployment > Web app**: Execute as **Me**, Who has access **Anyone**. Salin Web app URL.
+Jangan guna semula `ACCESS_SECRET`. Setiap modul ada secret sendiri.
 
-## C. Cloudflare
+## Langkah 5 - Jalankan setup dan deploy
 
-Pages > Settings > Variables and Secrets. Isi **Preview** (staging) dan **Production** (production) berasingan, jenis Secret:
+1. Dropdown fungsi di atas editor: pilih **`checkConfig`** > **Run**. Benarkan kebenaran. Log: `checkConfig OK (ENV=prod)`.
+2. Pilih **`setupSystem`** > **Run**. Log: `setupSystem selesai: VP-CostCalc | Rates (baru) seed=5 | ...`
+3. Buka Sheet `VP-CostCalc`: ada 4 tab (Rates, Estimates, AuditLog, _Counters). Tab Rates ada 5 baris dengan lajur `nilai_rm` **kosong**. Itu betul.
+4. **Deploy > New deployment** > gear > **Web app**:
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+5. **Deploy** > salin **Web app URL** (berakhir `/exec`).
 
-| Nama | Nilai |
-|---|---|
-| `GAS_URL_COSTCALC` | Web app URL langkah B6 |
-| `MODULE_SECRET_COSTCALC` | Sama tepat dengan Script Property `MODULE_SECRET` |
+## Langkah 6 - Cloudflare env (Production)
 
-Deploy semula selepas ubah env.
+Cloudflare > projek > **Settings > Variables and Secrets** > pastikan dropdown atas pilih **Production** > **Add**:
 
-## D. Akses staf (portal > Admin > Akses modul)
+| Type | Name | Value |
+|---|---|---|
+| Secret | `GAS_URL_COSTCALC` | Web app URL dari Langkah 5 |
+| Secret | `MODULE_SECRET_COSTCALC` | Sama tepat dengan `MODULE_SECRET` Langkah 4 |
 
-Untuk setiap staf: modul **Cost Calculator** > tick `user` (Commercial, PSS, OMP) atau `admin` (ketua Commercial). Guna "Salin akses dari staf lain" untuk jawatan sama. Sebab contoh: "Fasa 2A Cost Calculator".
+Simpan. Kemudian **Deployments** > deployment Production terkini > **...** > **Retry deployment** (env baru hanya dibaca deployment baru).
 
-Kad Cost Calculator di dashboard masih "Akan datang" sehingga go-live (langkah G). Untuk uji sebelum tu, buka terus `https://<url-portal>/costcalculator/`.
+## Langkah 7 - Beri akses dan isi kadar
 
-## E. Isi kadar (ketua Commercial)
+**7a. Akses staf.** Portal > **Admin > Akses modul** > setiap staf > **Ubah akses** > bahagian **Cost Calculator**:
+- Commercial, PSS, OMP: tick `user`
+- Ketua Commercial: tick `admin`
 
-Ketua Commercial login > buka `/costcalculator/` > tab **Kadar** > isi 5 kadar semasa (OT/jam, Transport/KM, Makan/hari/pax, Homestay/malam, Overnight/pax) > Simpan. Selagi kadar belum lengkap, staf boleh lihat preview tapi tak boleh simpan.
+Sebab: `Fasa 2A Cost Calculator`. Guna "Salin akses dari staf lain" untuk jawatan yang sama.
 
-## F. Uji
+**7b. Isi kadar.** Ketua Commercial login > buka `https://<portal>/costcalculator/` (kad di dashboard masih "Akan datang", jadi taip URL terus) > tab **Kadar** > isi 5 kadar semasa > **Simpan kadar**.
+
+## Langkah 8 - Uji, kemudian buka kepada semua
+
+**Uji dengan data sebenar** (taip URL `/costcalculator/` terus):
 
 | # | Ujian | Lulus bila |
 |---|---|---|
-| 1 | **Regresi (IPD seksyen 6):** Commercial masukkan 3 kes sebenar dalam sistem lama dan sistem baharu, dengan kadar yang sama | Jumlah mobilisasi, jumlah kos, margin, SST dan PO akhir sama tepat |
-| 2 | Staf `user` simpan draf | Dapat ID `EST-YYYY-NNNNN`; baris baharu dalam tab `Estimates` |
-| 3 | Gambar > Standard dan Landscape, di iPhone dan Android | Gambar jelas; iPhone boleh Share / Save to Photos |
-| 4 | Simpan muktamad, kemudian cuba ubah | Borang dikunci; Duplicate cipta salinan Draf |
-| 5 | Staf PSS buka Simpanan | Tak nampak estimate Commercial (dept lain) |
-| 6 | Staf HR (tiada role) buka `/costcalculator/` | Skrin "Tiada akses" |
-| 7 | Ketua Commercial ubah satu kadar | Tab `AuditLog` ada baris `UPDATE_RATES` dengan nilai lama → baru. Estimate lama kekal kadar asal |
-| 8 | `View page source` di `/costcalculator/` | Tiada nilai kadar dalam HTML/JS |
-| 9 | Sheet `VP-STG-CostCalc`: File > Share > Publish to web | Tiada yang diterbitkan |
+| 1 | Commercial masukkan 3 kes sebenar dalam sistem lama **dan** baharu, kadar sama | Jumlah kos, margin, SST, PO akhir sama tepat |
+| 2 | Simpan draf | Dapat ID `EST-2026-00001` dan baris baharu dalam tab Estimates |
+| 3 | Butang Gambar, Standard dan Landscape, di iPhone dan Android | Gambar jelas, boleh Share / Save to Photos |
+| 4 | Simpan muktamad, cuba ubah | Borang dikunci; Duplicate cipta salinan |
+| 5 | Staf PSS buka Simpanan | Tak nampak estimate Commercial |
+| 6 | Staf tanpa akses buka `/costcalculator/` | Skrin "Tiada akses" |
+| 7 | Ketua Commercial ubah satu kadar | Tab AuditLog ada `UPDATE_RATES` dengan nilai lama dan baru |
 
-## G. Go-live (IPD 2.x.7)
+Estimate ujian boleh dipadam selepas itu: tab **Simpanan** > ikon X (admin sahaja, sebab wajib).
 
-1. Ulang A hingga E untuk production (`VP-CostCalc`, `ENV=prod`, `MODULE_SECRET` production baharu).
-2. Sheet **VP-Access** production, tab `Modules`: baris `costcalc`, tukar `status` ke `aktif`. Kad di dashboard boleh ditekan dalam masa 10 minit.
-3. Umum kepada Commercial, PSS, OMP.
-4. Sistem lama: repo `voltake-energy/costcalculator` tukar ke **private**, kemudian **Archive** (Settings > Danger Zone). Repo tu sekarang public dan mengandungi kadar dalaman syarikat.
+**Buka kepada semua (go-live):**
+
+1. Sheet **`VP-Access`** > tab **Modules** > baris `costcalc` > lajur `status` tukar ke **`aktif`**. Kad di dashboard boleh ditekan dalam masa 10 minit.
+2. Umum kepada Commercial, PSS, OMP.
+3. Sistem lama: GitHub `voltake-energy/costcalculator` > Settings > tukar ke **Private**, kemudian **Archive**. Repo tu sekarang public dan ada kadar dalaman syarikat.
+
+---
+
+## Kalau ada masalah
+
+| Gejala | Punca biasa |
+|---|---|
+| `checkConfig` gagal "Script Properties belum diisi" | Nama property salah eja atau ada ruang kosong |
+| `setupSystem` gagal "Jangka VP-CostCalc" | Nama Sheet tak tepat, atau `SPREADSHEET_ID` Sheet lain |
+| Portal papar "Modul belum dikonfigurasi" | `GAS_URL_COSTCALC` belum diisi, atau belum Retry deployment |
+| Portal papar "Konfigurasi modul tidak sepadan (secret)" | `MODULE_SECRET_COSTCALC` tak sama tepat dengan Script Property `MODULE_SECRET` (semak ruang kosong di hujung) |
+| "Kadar kos belum lengkap" | Ketua Commercial belum isi kesemua 5 kadar (Langkah 7b) |

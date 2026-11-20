@@ -14,6 +14,8 @@ Reka bentuk penuh dalam [`docs/`](docs/): PRD, TRD, AFD, DBD, BSD, IPD. Pelan pe
 | 2A Cost Calculator | Kod siap. Langkah manual: [`docs/setup-fasa2a.md`](docs/setup-fasa2a.md) |
 | 2B-2H Modul | Belum mula |
 
+Keputusan pemilik (20/11/2026): mulai Fasa 2A, setiap modul disetup terus ke **production** (tiada Sheet/Apps Script staging). Ujian dibuat dengan data sebenar sebelum modul dibuka kepada semua (`Modules.status = aktif`).
+
 ## Struktur
 
 ```
