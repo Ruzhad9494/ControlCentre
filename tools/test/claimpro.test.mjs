@@ -18,7 +18,7 @@ const U = {
 const today = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
 const daysAgo = (n) => new Date(Date.now() + 8 * 3600e3 - n * 864e5).toISOString().slice(0, 10);
 
-const FORM = { tarikh: daysAgo(1), jenis: 'Makan & Minuman', pax: 2, keterangan: 'Makan tengah hari site', amaun_rm: 48.5, resit: { data: PNG_B64 } };
+const FORM = { tarikh: daysAgo(1), jenis: 'Perjalanan', pax: 2, keterangan: 'Makan tengah hari site', amaun_rm: 48.5, resit: { data: PNG_B64 } };
 
 async function call(gas, user, action, payload) {
   const body = JSON.stringify(await signEnvelope(CLAIMPRO_SECRET, action, payload, user));
@@ -33,7 +33,7 @@ async function submitted(gas, user = U.ali, over = {}) {
 test('setupSystem: 6 tab, ClaimTypes & Settings di-seed, folder Drive, 3 trigger tanpa pendua', () => {
   const gas = setupClaimProGas();
   assert.deepEqual([...gas.spreadsheet.sheets.keys()].sort(), ['Approvals', 'AuditLog', 'ClaimTypes', 'Claims', 'Settings', '_Counters']);
-  assert.deepEqual(gas.spreadsheet.getSheetByName('ClaimTypes').rows().map((r) => r.jenis), ['Perjalanan', 'Makan & Minuman', 'Penginapan', 'Perubatan', 'Keraian', 'Lain-lain']);
+  assert.deepEqual(gas.spreadsheet.getSheetByName('ClaimTypes').rows().map((r) => r.jenis), ['Perjalanan', 'Makan & Minum', 'Keraian', 'Penginapan', 'Perubatan', 'Lain-lain']);
   gas.ctx.setupSystem();
   gas.ctx.setupSystem();
   assert.deepEqual(gas.triggers.map((t) => t.handler).sort(), ['dailyArchive', 'dailyReminders', 'monthlyBezaReport']);
@@ -90,41 +90,44 @@ test('Validasi: tarikh masa depan, jenis tak sah, amaun, keterangan, pax, resit 
   for (const b of bad) assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, ...b, hantar: true })).status, 400, JSON.stringify(b));
   let r = await call(gas, U.ali, 'saveClaim', { ...FORM, resit: undefined, hantar: true });
   assert.equal(r.status, 400);
-  assert.match(r.error, /Resit wajib/);
+  assert.match(r.error, /Sekurang-kurangnya satu resit/);
   ok(await call(gas, U.ali, 'saveClaim', { ...FORM, resit: undefined, hantar: false }));   // draf tanpa resit dibenarkan
-  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Makan & Minuman', had_rm: 30, perlu_resit: true, aktif: true }));
+  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Perjalanan', had_rm: 30, perlu_resit: true, aktif: true }));
   r = await call(gas, U.ali, 'saveClaim', { ...FORM, amaun_rm: 48.5, hantar: true });
   assert.equal(r.status, 400);
   assert.match(r.error, /melebihi had/);
-  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Makan & Minuman', perlu_resit: false, aktif: true }));
+  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Perjalanan', perlu_resit: false, aktif: true }));
   ok(await call(gas, U.ali, 'saveClaim', { ...FORM, resit: undefined, hantar: true }));   // resit tak wajib lagi
-  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Makan & Minuman', perlu_resit: true, aktif: false }));
+  ok(await call(gas, U.hr, 'saveClaimType', { jenis: 'Perjalanan', perlu_resit: true, aktif: false }));
   assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, hantar: false })).status, 400, 'jenis tak aktif');
 });
 
-test('Fail: magic bytes disahkan (EXE bernama .jpg ditolak), 8MB, HEIC & PDF dibenarkan', async () => {
+test('Fail: magic bytes disahkan (EXE bernama .jpg ditolak), 10MB, HEIC & PDF dibenarkan', async () => {
   const gas = setupClaimProGas();
   const exe = Buffer.concat([Buffer.from('MZ'), Buffer.alloc(100, 1)]).toString('base64');
   assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, resit: { nama: 'resit.jpg', data: exe }, hantar: true })).status, 400);
   const html = Buffer.from('<html><script>alert(1)</script></html>  ').toString('base64');
   assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, resit: { data: html }, hantar: true })).status, 400);
   assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, resit: { data: '!!bukan base64!!' }, hantar: true })).status, 400);
-  const big = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(8 * 1024 * 1024 + 10, 1)]).toString('base64');
-  assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, resit: { data: big }, hantar: true })).status, 400, '>8MB');
+  const big = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(10 * 1024 * 1024 + 10, 1)]).toString('base64');
+  assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, resit: { data: big }, hantar: true })).status, 400, '>10MB');
   const heic = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypheic'), Buffer.alloc(40, 0)]).toString('base64');
   ok(await call(gas, U.ali, 'saveClaim', { ...FORM, resit: { data: heic }, hantar: true }));
   ok(await call(gas, U.ali, 'saveClaim', { ...FORM, resit: { data: PDF_B64 }, hantar: true }));
   assert.equal(gas.drive.files.size, 2, 'tiada fail tertinggal dari percubaan ditolak');
 });
 
-test('Draf: simpan, ubah, ganti resit (fail lama dibuang), hantar; Dihantar tak boleh diubah; padam draf', async () => {
+test('Draf: simpan, tambah resit, buang resit tertentu (fail dibuang dari Drive), hantar; Dihantar tak boleh diubah; padam draf', async () => {
   const gas = setupClaimProGas();
   const d = ok(await call(gas, U.ali, 'saveClaim', FORM));
   assert.equal(d.status, 'Draf');
   const first = gas.spreadsheet.getSheetByName('Claims').rows()[0].receipt_file_id;
   const d2 = ok(await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: d.claim_id, amaun_rm: 60, resit: { data: PDF_B64 } }));
   assert.equal(d2.amaun_rm, 60);
-  assert.equal(gas.drive.files.get(first).trashed, true, 'resit lama dibuang');
+  assert.equal(d2.bil_resit, 2, 'resit baharu DITAMBAH (sehingga 10, ikut sistem lama)');
+  const d2b = ok(await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: d.claim_id, amaun_rm: 60, resit: undefined, buang_resit: [0] }));
+  assert.equal(d2b.bil_resit, 1);
+  assert.equal(gas.drive.files.get(first).trashed, true, 'resit yang dibuang dialih ke tong sampah Drive');
   assert.equal(gas.mails.length, 0, 'draf tak hantar emel');
   const sent = ok(await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: d.claim_id, resit: undefined, hantar: true }));
   assert.equal(sent.status, 'Dihantar');
@@ -266,9 +269,9 @@ test('Sahkan bayaran: validasi tarikh/jumlah; jumlah sama -> Dibayar; beza -> be
 
 test('Senarai Lulus belum dibayar (HR), laporan ikut bulan/jenis/status, jumlah dan ringkasan', async () => {
   const gas = setupClaimProGas();
-  const a = await submitted(gas, U.ali, { jenis: 'Makan & Minuman', amaun_rm: 50 });
+  const a = await submitted(gas, U.ali, { jenis: 'Keraian', amaun_rm: 50 });
   const b = await submitted(gas, U.abu, { jenis: 'Perjalanan', amaun_rm: 120.25 });
-  const c = await submitted(gas, U.ali, { jenis: 'Makan & Minuman', amaun_rm: 30 });
+  const c = await submitted(gas, U.ali, { jenis: 'Keraian', amaun_rm: 30 });
   ok(await call(gas, U.hr, 'decideClaim', { claim_id: a, keputusan: 'Lulus' }));
   ok(await call(gas, U.hr, 'decideClaim', { claim_id: b, keputusan: 'Lulus' }));
   ok(await call(gas, U.hr, 'decideClaim', { claim_id: c, keputusan: 'Ditolak', sebab: 'Duplikat' }));
@@ -284,7 +287,7 @@ test('Senarai Lulus belum dibayar (HR), laporan ikut bulan/jenis/status, jumlah 
   assert.equal(all.bilangan, 3, 'Draf dikecualikan');
   assert.equal(all.jumlah_rm, 200.25);
   assert.deepEqual(all.ikut_status.Lulus, { bilangan: 1, jumlah_rm: 120.25 });
-  assert.deepEqual(all.ikut_jenis['Makan & Minuman'], { bilangan: 2, jumlah_rm: 80 });
+  assert.deepEqual(all.ikut_jenis.Keraian, { bilangan: 2, jumlah_rm: 80 });
   assert.equal(ok(await call(gas, U.head, 'claimReport', { jenis: 'Perjalanan' })).bilangan, 1);
   assert.equal(ok(await call(gas, U.head, 'claimReport', { status: 'Dibayar' })).bilangan, 1);
   assert.equal(ok(await call(gas, U.head, 'claimReport', { bulan: daysAgo(1).slice(0, 7) })).bilangan, 3);
@@ -367,4 +370,180 @@ test('Serentak: dua simpanan berturutan tak menimpa baris (appendRow) dan ID uni
   assert.equal(new Set(ids).size, 5);
   assert.equal(gas.spreadsheet.getSheetByName('Claims').rows().length, 5);
   assert.equal(gas.spreadsheet.getSheetByName('Approvals').rows().length, 5);
+});
+
+// ------------------------------------------------------------------ peraturan sistem lama (voltake-energy/claimpro)
+const setSetting = (gas, key, value) => {
+  const sh = gas.spreadsheet.getSheetByName('Settings');
+  const h = sh.header();
+  sh.data.forEach((r, i) => { if (i > 0 && r[0] === key) r[h.indexOf('value')] = value; });
+};
+
+test('Lama: Makan & Minum wajib pilih sesi; had = kadar sesi x pax (RM10 siang, RM15 malam, RM25 kedua)', async () => {
+  const gas = setupClaimProGas();
+  const M = { ...FORM, jenis: 'Makan & Minum', pax: 2, hantar: true };
+  let r = await call(gas, U.ali, 'saveClaim', { ...M, amaun_rm: 10 });
+  assert.equal(r.status, 400);
+  assert.match(r.error, /sesi makan/);
+  assert.equal(ok(await call(gas, U.ali, 'saveClaim', { ...M, sesi_makan: 'siang', amaun_rm: 20 })).sesi_makan, 'siang');
+  r = await call(gas, U.ali, 'saveClaim', { ...M, sesi_makan: 'siang', amaun_rm: 20.01 });
+  assert.equal(r.status, 400);
+  assert.match(r.error, /had makan RM 20\.00/);
+  ok(await call(gas, U.ali, 'saveClaim', { ...M, sesi_makan: 'malam', amaun_rm: 30 }));
+  assert.equal((await call(gas, U.ali, 'saveClaim', { ...M, sesi_makan: 'malam', amaun_rm: 30.5 })).status, 400);
+  ok(await call(gas, U.ali, 'saveClaim', { ...M, sesi_makan: 'siang+malam', amaun_rm: 50 }));
+  assert.equal((await call(gas, U.ali, 'saveClaim', { ...M, sesi_makan: 'pagi', amaun_rm: 5 })).status, 400);
+  setSetting(gas, 'kadar_makan_siang', '12');
+  ok(await call(gas, U.ali, 'saveClaim', { ...M, sesi_makan: 'siang', amaun_rm: 24 }));
+  const types = ok(await call(gas, U.ali, 'listClaimTypes', {}));
+  assert.deepEqual(types.find((t) => t.jenis === 'Makan & Minum').kadar_makan, { siang: 12, malam: 15, kedua: 25 });
+  assert.equal(ok(await call(gas, U.ali, 'saveClaim', { ...FORM, sesi_makan: 'siang', hantar: true })).sesi_makan, '', 'jenis lain abaikan sesi');
+});
+
+test('Lama: Perubatan had tahunan RM350 setiap staf ikut tahun; Draf & Ditolak tak dikira; baki dipapar', async () => {
+  const gas = setupClaimProGas();
+  const P = { ...FORM, jenis: 'Perubatan', pax: 1, hantar: true };
+  const year = daysAgo(1).slice(0, 4);
+  ok(await call(gas, U.ali, 'saveClaim', { ...P, amaun_rm: 200 }));
+  ok(await call(gas, U.ali, 'saveClaim', { ...P, amaun_rm: 50, hantar: false }));            // draf: tak dikira
+  const third = ok(await call(gas, U.ali, 'saveClaim', { ...P, amaun_rm: 150 }));
+  let r = await call(gas, U.ali, 'saveClaim', { ...P, amaun_rm: 1 });
+  assert.equal(r.status, 400);
+  assert.match(r.error, new RegExp(`baki ${year} tinggal RM 0\\.00`));
+  let t = ok(await call(gas, U.ali, 'listClaimTypes', {})).find((x) => x.jenis === 'Perubatan');
+  assert.deepEqual([t.had_tahunan_rm, t.digunakan_rm, t.baki_rm], [350, 350, 0]);
+  ok(await call(gas, U.hr, 'decideClaim', { claim_id: third.claim_id, keputusan: 'Ditolak', sebab: 'Bukan klinik panel' }));
+  ok(await call(gas, U.ali, 'saveClaim', { ...P, amaun_rm: 150 }));                           // ditolak: baki kembali
+  ok(await call(gas, U.abu, 'saveClaim', { ...P, amaun_rm: 350 }));                           // staf lain: had sendiri
+  ok(await call(gas, U.ali, 'saveClaim', { ...P, tarikh: '2025-06-01', amaun_rm: 300 }));     // tahun lain
+  t = ok(await call(gas, U.ali, 'listClaimTypes', { tahun: '2025' })).find((x) => x.jenis === 'Perubatan');
+  assert.equal(t.baki_rm, 50);
+});
+
+test('Lama: pax wajib nombor bulat 1-100; amaun maksimum RM50,000', async () => {
+  const gas = setupClaimProGas();
+  for (const pax of ['', undefined, 0, 101, 2.5]) assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, pax })).status, 400, String(pax));
+  assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, amaun_rm: 50000.01 })).status, 400);
+  ok(await call(gas, U.ali, 'saveClaim', { ...FORM, amaun_rm: 50000, pax: 100 }));
+});
+
+test('Lama: sehingga 10 resit setiap tuntutan; baca ikut indeks; WEBP diterima', async () => {
+  const gas = setupClaimProGas();
+  const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.from([0, 0, 0, 0]), Buffer.from('WEBPVP8 '), Buffer.alloc(20, 0)]).toString('base64');
+  const c = ok(await call(gas, U.ali, 'saveClaim', { ...FORM, resit: [{ data: PNG_B64 }, { data: PDF_B64 }, { data: webp }], hantar: true }));
+  assert.equal(c.bil_resit, 3);
+  assert.equal(ok(await call(gas, U.ali, 'getFile', { claim_id: c.claim_id, jenis: 'resit', index: 1 })).mime, 'application/pdf');
+  assert.equal(ok(await call(gas, U.hr, 'getFile', { claim_id: c.claim_id, jenis: 'resit', index: 2 })).mime, 'image/webp');
+  assert.equal((await call(gas, U.ali, 'getFile', { claim_id: c.claim_id, jenis: 'resit', index: 3 })).status, 404);
+  const many = Array.from({ length: 11 }, () => ({ data: PNG_B64 }));
+  assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, resit: many })).status, 400);
+  const d = ok(await call(gas, U.ali, 'saveClaim', { ...FORM, resit: many.slice(0, 9) }));
+  assert.equal((await call(gas, U.ali, 'saveClaim', { ...FORM, claim_id: d.claim_id, resit: [{ data: PNG_B64 }, { data: PNG_B64 }] })).status, 400, 'jumlah melebihi 10');
+});
+
+test('Sheet lama (tanpa lajur baharu): mesej jelas 503; setupSystem tambah lajur & Settings; syncOldClaimRules betulkan jenis', async () => {
+  const gas = setupClaimProGas();
+  const sh = gas.spreadsheet.getSheetByName('Claims');
+  const col = sh.header().indexOf('sesi_makan');
+  sh.data.forEach((r) => r.splice(col, 1));                          // simulasi Sheet versi awal
+  const st = gas.spreadsheet.getSheetByName('Settings');
+  st.data = st.data.filter((r) => !String(r[0]).startsWith('kadar_makan'));
+  const ct = gas.spreadsheet.getSheetByName('ClaimTypes');
+  const ch = ct.header();
+  ct.data.forEach((r, i) => { if (i > 0 && r[ch.indexOf('jenis')] === 'Makan & Minum') { r[ch.indexOf('jenis')] = 'Makan & Minuman'; r[ch.indexOf('guna_sesi_makan')] = 'FALSE'; } if (i > 0 && r[ch.indexOf('jenis')] === 'Perubatan') r[ch.indexOf('had_tahunan_rm')] = ''; });
+  const r = await call(gas, U.ali, 'saveClaim', FORM);
+  assert.equal(r.status, 503);
+  assert.match(r.error, /setupSystem/);
+  gas.ctx.setupSystem();
+  assert.ok(sh.header().includes('sesi_makan'));
+  assert.ok(st.rows().some((x) => x.key === 'kadar_makan_kedua' && String(x.value) === '25'));
+  ok(await call(gas, U.ali, 'saveClaim', FORM));
+  const log = gas.ctx.syncOldClaimRules();
+  assert.ok(log.some((l) => l.startsWith('Makan & Minum')));
+  const rows = ct.rows();
+  assert.ok(rows.some((x) => x.jenis === 'Makan & Minum' && x.guna_sesi_makan === 'TRUE'));
+  assert.ok(!rows.some((x) => x.jenis === 'Makan & Minuman'));
+  assert.equal(Number(rows.find((x) => x.jenis === 'Perubatan').had_tahunan_rm), 350);
+  assert.deepEqual([...gas.ctx.syncOldClaimRules()], [], 'idempotent');
+});
+
+// ------------------------------------------------------------------ bukti bayaran syarikat (permintaan pemilik 20/11/2026)
+async function approved(gas, user, amaun) {
+  const id = await submitted(gas, user, { amaun_rm: amaun });
+  ok(await call(gas, U.head, 'decideClaim', { claim_id: id, keputusan: 'Lulus' }));
+  return id;
+}
+
+test('Bukti bayaran: satu bukti untuk beberapa tuntutan staf sama, separa dibenarkan, status kekal Lulus, satu emel', async () => {
+  const gas = setupClaimProGas();
+  const a = await approved(gas, U.ali, 100);
+  const b = await approved(gas, U.ali, 80);
+  const mails0 = gas.mails.length;
+  const r = ok(await call(gas, U.hr, 'recordPayment', { claims: [{ claim_id: a }, { claim_id: b, jumlah_dibayar_rm: 50 }], bukti: { data: PDF_B64 }, tarikh_bayar: today() }));
+  assert.equal(r.jumlah_rm, 150);
+  const [ca, cb] = r.tuntutan;
+  assert.deepEqual([ca.status, ca.ada_bukti_bayar, ca.bayar_jumlah_rm, ca.separa], ['Lulus', true, 100, false]);
+  assert.deepEqual([cb.status, cb.bayar_jumlah_rm, cb.separa], ['Lulus', 50, true]);
+  assert.equal(ca.bayar_oleh_nama, 'Siti HR');
+  const rows = gas.spreadsheet.getSheetByName('Claims').rows();
+  assert.equal(rows.find((x) => x.claim_id === a).paid_proof_file_id, rows.find((x) => x.claim_id === b).paid_proof_file_id, 'satu fail dikongsi');
+  assert.equal(gas.mails.length, mails0 + 1, 'satu emel kepada staf');
+  assert.equal(gas.mails.at(-1).to, 'ali@gmail.com');
+  assert.match(gas.mails.at(-1).body, /separa/);
+  const pay = gas.ctx.DriveApp.getFolderById('claimpro-root').folders[0].folders.find((f) => f.name === 'Payments');
+  assert.equal(pay.files.length, 1);
+  assert.match(pay.files[0].getName(), /_bayaran_/);
+  // staf masih sahkan sendiri
+  assert.equal((await call(gas, U.hr, 'confirmReceived', { claim_id: a, received_date: today(), received_amount_rm: 100 })).status, 403);
+  assert.equal(ok(await call(gas, U.ali, 'confirmReceived', { claim_id: a, received_date: today(), received_amount_rm: 100 })).status, 'Dibayar');
+  // pemilik & pelulus boleh lihat bukti; staf lain tidak
+  assert.equal(ok(await call(gas, U.ali, 'getFile', { claim_id: b, jenis: 'bayaran' })).mime, 'application/pdf');
+  assert.equal((await call(gas, U.abu, 'getFile', { claim_id: b, jenis: 'bayaran' })).status, 403);
+});
+
+test('Bukti bayaran: peraturan - bukti wajib, tak lebih jumlah, staf sama, status Lulus, peraturan pelulus, tarikh', async () => {
+  const gas = setupClaimProGas();
+  const a = await approved(gas, U.ali, 100);
+  const x = await approved(gas, U.abu, 40);
+  const pending = await submitted(gas, U.ali, { amaun_rm: 10 });
+  const hrClaim = await approved(gas, U.hr2, 30);
+  const B = { bukti: { data: PNG_B64 } };
+  assert.equal((await call(gas, U.hr, 'recordPayment', { claims: [{ claim_id: a }] })).status, 400, 'bukti wajib');
+  assert.equal((await call(gas, U.hr, 'recordPayment', { ...B, claims: [{ claim_id: a, jumlah_dibayar_rm: 100.01 }] })).status, 400, 'lebih jumlah');
+  assert.equal((await call(gas, U.hr, 'recordPayment', { ...B, claims: [{ claim_id: a }, { claim_id: x }] })).status, 400, 'staf berbeza');
+  assert.equal((await call(gas, U.hr, 'recordPayment', { ...B, claims: [{ claim_id: pending }] })).status, 409, 'belum Lulus');
+  assert.equal((await call(gas, U.hr, 'recordPayment', { ...B, claims: [{ claim_id: a }, { claim_id: a }] })).status, 400, 'berulang');
+  assert.equal((await call(gas, U.hr, 'recordPayment', { ...B, claim_id: hrClaim })).status, 403, 'Admin HR tak boleh rekod untuk staf HR');
+  ok(await call(gas, U.head, 'recordPayment', { ...B, claim_id: hrClaim }));
+  assert.equal((await call(gas, U.ali, 'recordPayment', { ...B, claim_id: a })).status, 403, 'staf biasa');
+  assert.equal((await call(gas, U.hr, 'recordPayment', { ...B, claim_id: a, tarikh_bayar: daysAgo(-1) })).status, 400, 'masa depan');
+  assert.equal((await call(gas, U.hr, 'recordPayment', { ...B, claim_id: a, tarikh_bayar: daysAgo(30) })).status, 400, 'sebelum kelulusan');
+  assert.equal(gas.drive.files.size >= 1, true);
+  const proofs = [...gas.drive.files.values()].filter((f) => /_bayaran_/.test(f.getName()));
+  assert.equal(proofs.length, 1, 'percubaan ditolak tak tinggalkan fail');
+});
+
+test('Bukti bayaran: ganti bukti; fail lama dibuang hanya bila tiada tuntutan lain merujuknya', async () => {
+  const gas = setupClaimProGas();
+  const a = await approved(gas, U.ali, 100);
+  const b = await approved(gas, U.ali, 80);
+  ok(await call(gas, U.hr, 'recordPayment', { claims: [{ claim_id: a }, { claim_id: b }], bukti: { data: PNG_B64 } }));
+  const first = gas.spreadsheet.getSheetByName('Claims').rows().find((r) => r.claim_id === a).paid_proof_file_id;
+  ok(await call(gas, U.hr, 'recordPayment', { claim_id: a, bukti: { data: PDF_B64 } }));
+  assert.equal(gas.drive.files.get(first).trashed, false, 'masih dirujuk oleh tuntutan b');
+  ok(await call(gas, U.hr, 'recordPayment', { claim_id: b, bukti: { data: PDF_B64 } }));
+  assert.equal(gas.drive.files.get(first).trashed, true, 'tiada rujukan lagi: dibuang');
+  const hist = ok(await call(gas, U.ali, 'getClaim', { claim_id: a })).sejarah.map((h) => h.catatan).filter(Boolean);
+  assert.ok(hist.some((c) => /dimuat naik/.test(c)) && hist.some((c) => /diganti/.test(c)));
+});
+
+test('Lulus serentak dengan bukti bayaran; Tolak dengan bukti ditolak 400', async () => {
+  const gas = setupClaimProGas();
+  const id = await submitted(gas, U.ali, { amaun_rm: 70 });
+  assert.equal((await call(gas, U.hr, 'decideClaim', { claim_id: id, keputusan: 'Ditolak', sebab: 'salah', bayar: { bukti: { data: PNG_B64 } } })).status, 400);
+  const c = ok(await call(gas, U.hr, 'decideClaim', { claim_id: id, keputusan: 'Lulus', bayar: { bukti: { data: PNG_B64 }, jumlah_dibayar_rm: 70 } }));
+  assert.deepEqual([c.status, c.ada_bukti_bayar, c.bayar_jumlah_rm], ['Lulus', true, 70]);
+  assert.match(gas.mails.at(-1).body, /Syarikat telah merekod bayaran RM 70\.00/);
+  const pay = ok(await call(gas, U.hr, 'listToPay', {}));
+  assert.equal(pay.tanpa_bukti_bayar, 0);
 });

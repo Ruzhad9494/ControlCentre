@@ -1,21 +1,25 @@
 // ClaimPro (F-50 hingga F-53; AFD S-50 hingga S-54; IPD 2B).
-// UI sorok butang untuk kemas sahaja. Semua peraturan (asingan tugas, skop, jenis fail) disemak di Apps Script.
+// Peraturan perniagaan ikut sistem lama voltake-energy/claimpro (had makan ikut sesi, had perubatan tahunan,
+// pax wajib, sehingga 10 resit, rekod bayaran berkelompok dengan bukti). Klien papar had untuk kemudahan
+// sahaja: semua peraturan dan asingan tugas disemak di Apps Script.
 import { bootModule } from '/shared/lib/page.js';
 import { api } from '/shared/lib/api.js';
 import { el, clear, append } from '/shared/lib/escape.js';
 import { formatRM, formatDate, formatDateTime, todayIso } from '/shared/lib/format.js';
 import { icon, toast, openModal, confirmDialog, busy, badge, emptyState, renderModuleNav } from '/shared/ui/components.js';
-import { prepareFile } from '/claimpro/receipt.js';
+import { prepareFile, MAX_FILES } from '/claimpro/receipt.js';
 
 const MODULE = 'claimpro';
 const main = document.getElementById('main');
 let ctx;
 let view;
-let types = null;
 
 const isAdmin = () => ctx.roles.includes('admin') || ctx.roles.includes('ketua');
 const STATUS_KIND = { Draf: '', Dihantar: 'info', Lulus: 'success', Ditolak: 'danger', Dibayar: 'success' };
+const SESI_LABEL = { siang: 'Siang', malam: 'Malam', 'siang+malam': 'Siang + Malam' };
 const REMIND_DAYS = 14;
+const MAX_AMOUNT = 50000;
+const BATCH_B64 = 10 * 1024 * 1024; // saiz base64 maksimum satu permintaan (had gateway 15MB)
 
 const call = (action, payload) => api(MODULE, action, payload || {}, { onSlow: () => toast('Masih memproses...', 'info', 2500) });
 
@@ -29,26 +33,24 @@ function field(label, input, { hint, required, cls } = {}) {
 const inp = (attrs) => el('input', { class: 'input', autocomplete: 'off', ...attrs });
 const errBox = () => el('div', { class: 'alert alert-danger', role: 'alert', hidden: true });
 const showErr = (box, e) => { clear(box).append(e.message || String(e)); box.hidden = false; box.scrollIntoView({ block: 'nearest' }); };
+const loadTypes = (tahun) => call('listClaimTypes', tahun ? { tahun } : {});
 
-async function loadTypes(force) {
-  if (!types || force) types = await call('listClaimTypes');
-  return types;
-}
+// ------------------------------------------------------------------ fail
+const FILE_TITLE = { resit: 'Resit', bukti: 'Bukti terima (staf)', bayaran: 'Bukti bayaran syarikat' };
 
-// ------------------------------------------------------------------ fail (resit/bukti)
-async function viewFile(claimId, jenis) {
+async function viewFile(claimId, jenis, index = 0) {
   try {
-    const f = await call('getFile', { claim_id: claimId, jenis });
+    const f = await call('getFile', { claim_id: claimId, jenis, index });
     const bytes = Uint8Array.from(atob(f.data), (c) => c.charCodeAt(0));
     const url = URL.createObjectURL(new Blob([bytes], { type: f.mime }));
-    const isImg = /^image\/(jpeg|png)$/.test(f.mime);
+    const isImg = /^image\/(jpeg|png|webp)$/.test(f.mime);
     const download = () => { const a = el('a', { href: url, download: f.nama }); document.body.append(a); a.click(); a.remove(); };
     openModal({
-      title: jenis === 'bukti' ? 'Bukti bayaran' : 'Resit',
+      title: FILE_TITLE[jenis] + (jenis === 'resit' ? ' ' + (index + 1) : ''),
       wide: true,
       body: isImg
-        ? el('img', { src: url, alt: 'Resit ' + claimId, class: 'share-img' })
-        : el('p', null, f.mime === 'application/pdf' ? 'Fail PDF. Tekan Muat turun untuk buka.' : 'Format HEIC tak boleh dipapar dalam pelayar ini. Tekan Muat turun.'),
+        ? el('img', { src: url, alt: FILE_TITLE[jenis] + ' ' + claimId, class: 'share-img' })
+        : el('p', null, f.mime === 'application/pdf' ? 'Fail PDF. Tekan Muat turun untuk buka.' : 'Format ini tak boleh dipapar dalam pelayar. Tekan Muat turun.'),
       onClose: () => setTimeout(() => URL.revokeObjectURL(url), 1000),
       actions: [{ label: 'Tutup', class: 'btn-secondary' }, { label: 'Muat turun', onClick: () => download() }],
     });
@@ -57,48 +59,81 @@ async function viewFile(claimId, jenis) {
   }
 }
 
-/** Kawalan pilih fail dengan preview. Pulang { node, get() -> prepared|null, remove(), hadFile } */
-function filePicker({ label, existing, hint }) {
+/** Satu fail (bukti bayaran / bukti terima). Pulang { node, get() }. */
+function filePicker({ label, hint }) {
   let prepared = null;
-  let removed = false;
   const input = el('input', { type: 'file', accept: 'image/*,application/pdf', class: 'sr-only', 'aria-label': label });
   const status = el('div', { class: 'caption' });
   const preview = el('div');
   const box = el('div', { class: 'file-pick' });
-  const pick = el('button', { class: 'btn btn-secondary', type: 'button' }, icon('plus'), existing ? 'Tukar resit' : 'Ambil gambar / pilih fail');
+  const pick = el('button', { class: 'btn btn-secondary', type: 'button' }, icon('plus'), 'Pilih fail / ambil gambar');
+  const rm = el('button', { class: 'btn btn-ghost btn-sm', type: 'button', hidden: true }, icon('x'), 'Buang');
   pick.addEventListener('click', () => input.click());
   const draw = () => {
     clear(status);
     clear(preview);
-    box.classList.toggle('has', Boolean(prepared) || Boolean(existing && !removed));
+    box.classList.toggle('has', Boolean(prepared));
+    rm.hidden = !prepared;
     if (prepared) {
       status.append(`${prepared.nama} (${(prepared.size / 1024).toFixed(0)} KB)`);
-      if (/^image\//.test(prepared.mime) && prepared.mime !== 'image/heic') preview.append(el('img', { src: URL.createObjectURL(prepared.blob), alt: 'Preview resit' }));
-    } else if (existing && !removed) status.append('Resit sedia ada akan dikekalkan.');
-    else status.append(hint || 'Belum ada fail.');
+      if (/^image\/(jpeg|png|webp)$/.test(prepared.mime)) preview.append(el('img', { src: URL.createObjectURL(prepared.blob), alt: 'Preview ' + label }));
+    } else status.append(hint || 'Belum ada fail.');
   };
   input.addEventListener('change', async () => {
     const f = input.files && input.files[0];
     if (!f) return;
-    try {
-      prepared = await prepareFile(f);
-      removed = false;
-    } catch (e) {
-      toast(e.message, 'danger');
-      input.value = '';
+    try { prepared = await prepareFile(f); } catch (e) { toast(e.message, 'danger'); input.value = ''; }
+    draw();
+  });
+  rm.addEventListener('click', () => { prepared = null; input.value = ''; draw(); });
+  append(box, el('div', { class: 'stack' }, el('div', { class: 'row', style: 'justify-content:center' }, pick, rm), status, preview), input);
+  draw();
+  return { node: box, get: () => prepared };
+}
+
+/**
+ * Sehingga 10 resit (sistem lama: MAX_FILES_PER_CLAIM). Resit sedia ada boleh dilihat/dibuang; fail baharu ditambah.
+ * Pulang { node, files(), removedIdx(), count() }.
+ */
+function receiptPicker({ claimId, existing = 0, onChange }) {
+  const added = [];
+  const removed = new Set();
+  const input = el('input', { type: 'file', accept: 'image/*,application/pdf', multiple: true, class: 'sr-only', 'aria-label': 'Resit' });
+  const list = el('ul', { class: 'file-list' });
+  const status = el('div', { class: 'caption' });
+  const box = el('div', { class: 'file-pick' });
+  const pick = el('button', { class: 'btn btn-secondary', type: 'button' }, icon('plus'), 'Ambil gambar / pilih fail');
+  pick.addEventListener('click', () => input.click());
+  const count = () => existing - removed.size + added.length;
+  const draw = () => {
+    clear(list);
+    for (let i = 0; i < existing; i++) {
+      if (removed.has(i)) continue;
+      list.append(el('li', null, icon('receipt'), el('span', { class: 'grow' }, `Resit ${i + 1} (tersimpan)`),
+        el('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => viewFile(claimId, 'resit', i) }, 'Lihat'),
+        el('button', { class: 'btn btn-ghost btn-sm', type: 'button', 'aria-label': `Buang resit ${i + 1}`, onclick: () => { removed.add(i); draw(); } }, icon('x'))));
+    }
+    added.forEach((p, i) => {
+      list.append(el('li', null, icon('receipt'), el('span', { class: 'grow' }, `${p.nama} (${(p.size / 1024).toFixed(0)} KB)`),
+        el('button', { class: 'btn btn-ghost btn-sm', type: 'button', 'aria-label': `Buang ${p.nama}`, onclick: () => { added.splice(i, 1); draw(); } }, icon('x'))));
+    });
+    box.classList.toggle('has', count() > 0);
+    pick.disabled = count() >= MAX_FILES;
+    clear(status).append(count() ? `${count()} daripada maksimum ${MAX_FILES} fail.` : 'Ambil gambar resit atau pilih fail (JPG, PNG, HEIC, WEBP, PDF; maksimum 10MB sefail, 10 fail).');
+    onChange && onChange();
+  };
+  input.addEventListener('change', async () => {
+    const files = [...(input.files || [])];
+    input.value = '';
+    for (const f of files) {
+      if (count() >= MAX_FILES) { toast(`Maksimum ${MAX_FILES} fail satu tuntutan.`, 'warning'); break; }
+      try { added.push(await prepareFile(f)); } catch (e) { toast(`${f.name}: ${e.message}`, 'danger'); }
     }
     draw();
   });
-  const rm = el('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, icon('x'), 'Buang');
-  rm.addEventListener('click', () => { prepared = null; removed = true; input.value = ''; draw(); });
-  append(box, el('div', { class: 'stack' }, el('div', { class: 'row', style: 'justify-content:center' }, pick, existing || prepared ? rm : null), status, preview), input);
+  append(box, el('div', { class: 'stack' }, list, el('div', { class: 'row', style: 'justify-content:center' }, pick), status), input);
   draw();
-  return {
-    node: box,
-    get: () => prepared,
-    removed: () => removed,
-    has: () => Boolean(prepared) || Boolean(existing && !removed),
-  };
+  return { node: box, files: () => [...added], removedIdx: () => [...removed], count };
 }
 
 // ------------------------------------------------------------------ router
@@ -119,18 +154,25 @@ async function route() {
 }
 
 // ------------------------------------------------------------------ S-50 Tuntutan saya
+function paidBadge(c) {
+  if (!c.ada_bukti_bayar) return null;
+  return badge(c.separa ? `Separa dibayar ${formatRM(c.bayar_jumlah_rm)}` : 'Bayaran direkod', c.separa ? 'warning' : 'info');
+}
+
 function claimCard(c, { actions } = {}) {
   const overdue = c.status === 'Lulus' && c.hari_lulus !== null && c.hari_lulus >= REMIND_DAYS;
   return el('article', { class: 'cp-card' + (overdue ? ' warn' : '') },
     el('div', { class: 'top' },
       el('div', null,
         el('a', { href: '#/c/' + encodeURIComponent(c.claim_id) }, el('strong', null, c.claim_id)),
-        el('div', { class: 'meta' }, `${c.jenis} · ${formatDate(c.tarikh)}${c.pax ? ' · ' + c.pax + ' pax' : ''}`)),
-      el('div', { style: 'text-align:right' }, el('div', { class: 'amt' }, formatRM(c.amaun_rm)), badge(c.status, STATUS_KIND[c.status]))),
+        el('div', { class: 'meta' }, `${c.jenis}${c.sesi_makan ? ' (' + SESI_LABEL[c.sesi_makan] + ')' : ''} · ${formatDate(c.tarikh)} · ${c.pax} pax · ${c.bil_resit} resit`)),
+      el('div', { style: 'text-align:right' }, el('div', { class: 'amt' }, formatRM(c.amaun_rm)),
+        el('div', { class: 'chips', style: 'justify-content:flex-end' }, badge(c.status, STATUS_KIND[c.status]), paidBadge(c)))),
     el('p', { class: 'desc' }, c.keterangan),
     c.status === 'Ditolak' ? el('div', { class: 'alert alert-danger' }, 'Ditolak: ', c.sebab_tolak) : null,
     c.boleh_sahkan ? el('div', { class: 'alert ' + (overdue ? 'alert-warning' : 'alert-info') },
-      overdue ? `Diluluskan ${c.hari_lulus} hari lalu. Dah terima bayaran? Sila sahkan.` : 'Diluluskan. Selepas terima bayaran, sila sahkan.') : null,
+      c.ada_bukti_bayar ? `Syarikat merekod bayaran ${formatRM(c.bayar_jumlah_rm)} pada ${formatDate(c.bayar_tarikh)}. Selepas semak akaun bank, sila sahkan.`
+        : overdue ? `Diluluskan ${c.hari_lulus} hari lalu. Dah terima bayaran? Sila sahkan.` : 'Diluluskan. Selepas terima bayaran, sila sahkan.') : null,
     actions ? el('div', { class: 'row' }, actions) : null);
 }
 
@@ -140,14 +182,17 @@ async function renderMine() {
   const host = el('div', null, el('div', { class: 'skeleton', style: 'height:160px' }));
   const stats = el('div', { class: 'cp-stats' });
   const load = async () => {
-    const rows = await call('listMyClaims', { status: filter.value });
+    const [rows, types] = await Promise.all([call('listMyClaims', { status: filter.value }), loadTypes()]);
     const sum = (st) => rows.filter((r) => r.status === st).reduce((a, r) => a + r.amaun_rm, 0);
+    clear(stats);
     if (!filter.value) {
-      append(clear(stats),
+      append(stats,
         el('div', { class: 'cp-stat' }, el('div', { class: 'label' }, 'Menunggu kelulusan'), el('div', { class: 'v' }, formatRM(sum('Dihantar')))),
         el('div', { class: 'cp-stat warn' }, el('div', { class: 'label' }, 'Lulus, belum disahkan terima'), el('div', { class: 'v' }, formatRM(sum('Lulus')))),
-        el('div', { class: 'cp-stat ok' }, el('div', { class: 'label' }, 'Dibayar'), el('div', { class: 'v' }, formatRM(sum('Dibayar')))));
-    } else clear(stats);
+        el('div', { class: 'cp-stat ok' }, el('div', { class: 'label' }, 'Dibayar'), el('div', { class: 'v' }, formatRM(sum('Dibayar')))),
+        types.filter((t) => t.had_tahunan_rm).map((t) => el('div', { class: 'cp-stat' },
+          el('div', { class: 'label' }, `Baki ${t.jenis} ${t.tahun}`), el('div', { class: 'v' }, formatRM(t.baki_rm)), el('div', { class: 'caption' }, `daripada ${formatRM(t.had_tahunan_rm)}`))));
+    }
     clear(host);
     if (!rows.length) {
       host.append(emptyState('receipt', filter.value ? 'Tiada tuntutan berstatus ini.' : 'Belum ada tuntutan. Buat tuntutan pertama anda.',
@@ -169,44 +214,99 @@ async function renderMine() {
 }
 
 // ------------------------------------------------------------------ S-51 Borang tuntutan
+function mealCap(t, sesi, pax) {
+  if (!t?.kadar_makan || !sesi) return null;
+  const r = sesi === 'siang+malam' ? t.kadar_makan.kedua : t.kadar_makan[sesi];
+  return Math.round(r * pax * 100) / 100;
+}
+
+/** Bahagikan fail kepada kelompok supaya setiap permintaan bawah had gateway. */
+function batches(files) {
+  const out = [[]];
+  let size = 0;
+  for (const f of files) {
+    if (size + f.data.length > BATCH_B64 && out[out.length - 1].length) { out.push([]); size = 0; }
+    out[out.length - 1].push(f);
+    size += f.data.length;
+  }
+  return out;
+}
+
 async function renderForm(claimId) {
-  const [tp, existing] = await Promise.all([loadTypes(true), claimId ? call('getClaim', { claim_id: claimId }) : null]);
+  const existing = claimId ? await call('getClaim', { claim_id: claimId }) : null;
   if (existing && !existing.boleh_ubah) { location.replace('#/c/' + encodeURIComponent(claimId)); return; }
+  const startDate = existing ? existing.tarikh : todayIso();
+  let tp = await loadTypes(startDate.slice(0, 4));
   const f = {
-    jenis: el('select', { class: 'input' }, [el('option', { value: '' }, 'Pilih jenis'), ...tp.map((t) => el('option', { value: t.jenis }, t.jenis))]),
-    tarikh: inp({ type: 'date', max: todayIso(), value: existing ? existing.tarikh : todayIso() }),
-    pax: inp({ type: 'number', inputmode: 'numeric', min: '1', step: '1', value: existing?.pax ?? '', placeholder: 'Pilihan' }),
-    amaun: inp({ type: 'number', inputmode: 'decimal', min: '0', step: '0.01', value: existing?.amaun_rm ?? '', placeholder: '0.00' }),
-    keterangan: el('textarea', { class: 'input', rows: 3, maxlength: 500, placeholder: 'Contoh: Makan tengah hari bersama pasukan di site' }),
+    jenis: el('select', { class: 'input' }),
+    tarikh: inp({ type: 'date', max: todayIso(), value: startDate }),
+    pax: inp({ type: 'number', inputmode: 'numeric', min: '1', max: '100', step: '1', value: existing?.pax ?? 1 }),
+    amaun: inp({ type: 'number', inputmode: 'decimal', min: '0', max: String(MAX_AMOUNT), step: '0.01', value: existing?.amaun_rm ?? '', placeholder: '0.00' }),
+    keterangan: el('textarea', { class: 'input', rows: 3, maxlength: 500, placeholder: 'Contoh: Tol dan minyak ke site Tanjung Malim' }),
+    siang: el('input', { type: 'checkbox' }),
+    malam: el('input', { type: 'checkbox' }),
   };
+  const fillTypes = () => {
+    const cur = f.jenis.value || existing?.jenis || '';
+    append(clear(f.jenis), el('option', { value: '' }, 'Pilih jenis'), tp.map((t) => el('option', { value: t.jenis }, t.jenis)));
+    f.jenis.value = cur;
+  };
+  fillTypes();
   f.keterangan.value = existing?.keterangan || '';
-  f.jenis.value = existing?.jenis || '';
-  const typeHint = el('span', { class: 'hint' });
-  const picker = filePicker({ label: 'Resit', existing: existing?.ada_resit, hint: 'Ambil gambar resit atau pilih fail (JPG, PNG, HEIC, PDF, maksimum 8MB).' });
+  f.siang.checked = /siang/.test(existing?.sesi_makan || '');
+  f.malam.checked = /malam/.test(existing?.sesi_makan || '');
+  const sesiBox = el('fieldset', { class: 'field', style: 'border:0;padding:0;margin:0' },
+    el('legend', { class: 'label' }, 'Sesi makan', el('span', { class: 'req' }, ' *')),
+    el('div', { class: 'row' }, el('label', { class: 'check' }, f.siang, 'Siang'), el('label', { class: 'check' }, f.malam, 'Malam')));
+  const typeHint = el('div', { class: 'alert alert-info', hidden: true });
+  const picker = receiptPicker({ claimId, existing: existing?.bil_resit || 0 });
   const err = errBox();
+  const type = () => tp.find((x) => x.jenis === f.jenis.value);
+  const sesi = () => (f.siang.checked && f.malam.checked ? 'siang+malam' : f.siang.checked ? 'siang' : f.malam.checked ? 'malam' : '');
+
   const updateHint = () => {
-    const t = tp.find((x) => x.jenis === f.jenis.value);
-    clear(typeHint).append(t ? [t.perlu_resit ? 'Resit wajib untuk jenis ini. ' : 'Resit tak wajib. ', t.had_rm ? `Had RM ${t.had_rm.toFixed(2)}.` : ''] : '');
+    const t = type();
+    sesiBox.hidden = !t?.guna_sesi_makan;
+    const parts = [];
+    if (t?.guna_sesi_makan) {
+      const k = t.kadar_makan;
+      parts.push(`Had makan setiap pax: Siang ${formatRM(k.siang)}, Malam ${formatRM(k.malam)}, Siang + Malam ${formatRM(k.kedua)}.`);
+      const cap = mealCap(t, sesi(), Number(f.pax.value) || 0);
+      if (cap !== null) parts.push(`Had tuntutan ini: ${formatRM(cap)}.`);
+    }
+    if (t?.had_tahunan_rm) parts.push(`Baki ${t.jenis} ${t.tahun}: ${formatRM(t.baki_rm)} daripada ${formatRM(t.had_tahunan_rm)}.`);
+    if (t?.had_rm) parts.push(`Had setiap tuntutan: ${formatRM(t.had_rm)}.`);
+    if (t && !t.perlu_resit) parts.push('Resit tak wajib untuk jenis ini.');
+    clear(typeHint).append(parts.join(' '));
+    typeHint.hidden = !parts.length;
   };
-  f.jenis.addEventListener('change', updateHint);
+  [f.jenis, f.siang, f.malam].forEach((x) => x.addEventListener('change', updateHint));
+  f.pax.addEventListener('input', updateHint);
+  f.tarikh.addEventListener('change', async () => {
+    const y = (f.tarikh.value || '').slice(0, 4);
+    if (/^\d{4}$/.test(y) && y !== (tp.find((t) => t.tahun)?.tahun || y)) { tp = await loadTypes(y); fillTypes(); }
+    updateHint();
+  });
   updateHint();
 
-  const payload = (hantar) => {
-    const up = picker.get();
-    return {
-      claim_id: claimId || undefined, jenis: f.jenis.value, tarikh: f.tarikh.value, pax: f.pax.value, keterangan: f.keterangan.value,
-      amaun_rm: f.amaun.value, resit: up ? { data: up.data } : undefined, buang_resit: picker.removed() && !up ? true : undefined, hantar,
-    };
-  };
   const clientCheck = (hantar) => {
-    if (!f.jenis.value) return 'Pilih jenis tuntutan';
+    const t = type();
+    const pax = Number(f.pax.value);
+    const amt = Number(f.amaun.value);
+    if (!t) return 'Pilih jenis tuntutan';
     if (!f.tarikh.value) return 'Isi tarikh perbelanjaan';
-    if (!f.amaun.value || Number(f.amaun.value) <= 0) return 'Isi amaun lebih daripada 0';
+    if (!Number.isInteger(pax) || pax < 1 || pax > 100) return 'Pax mesti nombor bulat 1 hingga 100';
+    if (!amt || amt <= 0) return 'Isi amaun lebih daripada 0';
+    if (amt > MAX_AMOUNT) return `Amaun maksimum ${formatRM(MAX_AMOUNT)}`;
+    if (t.guna_sesi_makan && !sesi()) return 'Pilih sesi makan (Siang / Malam)';
+    const cap = mealCap(t, sesi(), pax);
+    if (cap !== null && amt > cap + 0.001) return `Melebihi had makan ${formatRM(cap)}`;
+    if (t.had_tahunan_rm && amt > t.baki_rm + 0.001) return `Melebihi baki ${t.jenis} ${t.tahun} (${formatRM(t.baki_rm)})`;
     if (!f.keterangan.value.trim()) return 'Isi keterangan';
-    const t = tp.find((x) => x.jenis === f.jenis.value);
-    if (hantar && t?.perlu_resit && !picker.has()) return 'Resit wajib untuk jenis ini';
+    if (hantar && t.perlu_resit && picker.count() === 0) return 'Sekurang-kurangnya satu resit diperlukan';
     return '';
   };
+
   async function save(hantar, btn) {
     err.hidden = true;
     const bad = clientCheck(hantar);
@@ -214,7 +314,19 @@ async function renderForm(claimId) {
     if (hantar && !(await confirmDialog('Hantar tuntutan?', `RM ${Number(f.amaun.value).toFixed(2)} (${f.jenis.value}). Selepas dihantar, tuntutan tak boleh diubah.`, { okLabel: 'Hantar' }))) return;
     await busy(btn, async () => {
       try {
-        const c = await call('saveClaim', payload(hantar));
+        const base = { jenis: f.jenis.value, tarikh: f.tarikh.value, pax: Number(f.pax.value), sesi_makan: sesi(), keterangan: f.keterangan.value, amaun_rm: f.amaun.value };
+        const groups = batches(picker.files());
+        let id = claimId || undefined;
+        let c;
+        for (let i = 0; i < groups.length; i++) {
+          const last = i === groups.length - 1;
+          c = await call('saveClaim', {
+            ...base, claim_id: id, resit: groups[i].map((x) => ({ data: x.data })),
+            buang_resit: i === 0 && picker.removedIdx().length ? picker.removedIdx() : undefined, hantar: last && hantar,
+          });
+          id = c.claim_id;
+          if (groups.length > 1 && !last) toast(`Muat naik fail ${i + 1}/${groups.length}...`, 'info', 2000);
+        }
         toast(hantar ? `${c.claim_id} dihantar untuk kelulusan.` : `Draf ${c.claim_id} disimpan.`, 'success');
         location.hash = hantar ? '#/c/' + encodeURIComponent(c.claim_id) : '#/';
       } catch (e) { showErr(err, e); }
@@ -235,9 +347,10 @@ async function renderForm(claimId) {
     el('form', { class: 'cp-form', onsubmit: (e) => e.preventDefault(), novalidate: true },
       err,
       el('div', { class: 'cp-grid' },
-        field('Jenis tuntutan', f.jenis, { required: true, cls: 'full', hint: null }),
+        field('Jenis tuntutan', f.jenis, { required: true, cls: 'full' }),
         field('Tarikh perbelanjaan', f.tarikh, { required: true }),
-        field('Pax', f.pax),
+        field('Pax', f.pax, { required: true }),
+        el('div', { class: 'full' }, sesiBox),
         field('Amaun (RM)', f.amaun, { required: true, cls: 'full' })),
       typeHint,
       field('Keterangan', f.keterangan, { required: true, hint: 'Maksimum 500 aksara.' }),
@@ -250,34 +363,40 @@ async function renderDetail(id) {
   const c = await call('getClaim', { claim_id: id });
   const kv = (k, v) => [el('dt', null, k), el('dd', null, v === null || v === undefined || v === '' ? '-' : v)];
   const overdue = c.status === 'Lulus' && c.hari_lulus !== null && c.hari_lulus >= REMIND_DAYS;
-  const confirmBox = c.boleh_sahkan ? confirmForm(c) : null;
+  const receipts = Array.from({ length: c.bil_resit }, (_, i) => el('button', { class: 'btn btn-secondary', type: 'button', onclick: () => viewFile(c.claim_id, 'resit', i) }, icon('receipt'), `Resit ${i + 1}`));
   append(view,
-    el('div', { class: 'row' }, el('a', { class: 'btn btn-ghost btn-sm', href: c.milik_saya ? '#/' : '#/laporan' }, icon('arrow-left'), 'Kembali')),
-    el('div', { class: 'row-between' }, el('h2', { style: 'margin:0' }, c.claim_id), badge(c.status, STATUS_KIND[c.status])),
+    el('div', { class: 'row' }, el('a', { class: 'btn btn-ghost btn-sm', href: c.milik_saya ? '#/' : '#/laporan/bayar' }, icon('arrow-left'), 'Kembali')),
+    el('div', { class: 'row-between' }, el('h2', { style: 'margin:0' }, c.claim_id), el('div', { class: 'chips' }, badge(c.status, STATUS_KIND[c.status]), paidBadge(c))),
     el('section', { class: 'card stack' },
       el('dl', { class: 'kv' },
-        kv('Staf', `${c.staff_name} (${c.staff_id}) · ${c.department}`), kv('Jenis', c.jenis), kv('Tarikh perbelanjaan', formatDate(c.tarikh)),
-        kv('Pax', c.pax), kv('Keterangan', c.keterangan), kv('Amaun', el('strong', { class: 'num' }, formatRM(c.amaun_rm))),
+        kv('Staf', `${c.staff_name} (${c.staff_id}) · ${c.department}`),
+        kv('Jenis', c.jenis + (c.sesi_makan ? ` (${SESI_LABEL[c.sesi_makan]})` : '')),
+        kv('Tarikh perbelanjaan', formatDate(c.tarikh)), kv('Pax', c.pax), kv('Keterangan', c.keterangan),
+        kv('Amaun', el('strong', { class: 'num' }, formatRM(c.amaun_rm))),
         kv('Dihantar', c.submitted_at ? formatDateTime(c.submitted_at) : null),
         c.approved_at ? kv(c.status === 'Ditolak' ? 'Ditolak oleh' : 'Diluluskan oleh', `${c.approved_by_name} · ${formatDateTime(c.approved_at)}`) : null,
         c.sebab_tolak ? kv('Sebab tolak', c.sebab_tolak) : null,
+        c.ada_bukti_bayar ? kv('Bayaran syarikat', `${formatRM(c.bayar_jumlah_rm)} pada ${formatDate(c.bayar_tarikh)} · direkod oleh ${c.bayar_oleh_nama}${c.separa ? ' (separa)' : ''}`) : null,
         c.status === 'Dibayar' ? [...kv('Tarikh terima', formatDate(c.received_date)), ...kv('Jumlah diterima', formatRM(c.received_amount_rm))] : null),
       c.beza_bayaran ? el('div', { class: 'alert alert-warning' }, icon('triangle-alert'), 'Jumlah diterima berbeza daripada jumlah diluluskan. Admin telah dimaklumkan.') : null,
       el('div', { class: 'row' },
-        c.ada_resit ? el('button', { class: 'btn btn-secondary', type: 'button', onclick: () => viewFile(c.claim_id, 'resit') }, icon('receipt'), 'Lihat resit') : null,
-        c.ada_bukti ? el('button', { class: 'btn btn-secondary', type: 'button', onclick: () => viewFile(c.claim_id, 'bukti') }, icon('scroll-text'), 'Bukti bayaran') : null,
+        receipts,
+        c.ada_bukti_bayar ? el('button', { class: 'btn btn-secondary', type: 'button', onclick: () => viewFile(c.claim_id, 'bayaran') }, icon('scroll-text'), 'Bukti bayaran syarikat') : null,
+        c.ada_bukti ? el('button', { class: 'btn btn-secondary', type: 'button', onclick: () => viewFile(c.claim_id, 'bukti') }, icon('scroll-text'), 'Bukti terima') : null,
+        c.boleh_rekod_bayar ? el('button', { class: 'btn', type: 'button', onclick: () => paymentModal([c], route) }, icon('plus'), c.ada_bukti_bayar ? 'Ganti bukti bayaran' : 'Rekod bukti bayaran') : null,
         c.boleh_ubah ? el('a', { class: 'btn btn-secondary', href: '#/e/' + encodeURIComponent(c.claim_id) }, icon('pencil'), 'Ubah draf') : null)),
     overdue ? el('div', { class: 'alert alert-warning' }, icon('triangle-alert'), `Diluluskan ${c.hari_lulus} hari lalu. Jika dah terima bayaran, sila sahkan di bawah.`) : null,
-    confirmBox,
+    c.boleh_sahkan ? confirmForm(c) : null,
     el('section', { class: 'card' }, el('h3', null, 'Sejarah'),
       el('ol', { class: 'timeline' }, (c.sejarah || []).map((h) => el('li', null,
-        el('div', null, el('strong', null, `${h.dari} → ${h.ke}`), ' oleh ', h.oleh), el('div', { class: 't' }, formatDateTime(h.ts)), h.catatan ? el('div', null, h.catatan) : null)))));
+        el('div', null, el('strong', null, h.dari === h.ke ? h.ke : `${h.dari} → ${h.ke}`), ' oleh ', h.oleh),
+        el('div', { class: 't' }, formatDateTime(h.ts)), h.catatan ? el('div', null, h.catatan) : null)))));
 }
 
 function confirmForm(c) {
-  const date = inp({ type: 'date', max: todayIso(), min: (c.approved_at || '').slice(0, 10), value: todayIso() });
-  const amount = inp({ type: 'number', inputmode: 'decimal', min: '0', step: '0.01', value: c.amaun_rm.toFixed(2) });
-  const proof = filePicker({ label: 'Bukti bayaran', hint: 'Pilihan: tangkap skrin penyata bank.' });
+  const date = inp({ type: 'date', max: todayIso(), min: (c.approved_at || '').slice(0, 10), value: c.bayar_tarikh || todayIso() });
+  const amount = inp({ type: 'number', inputmode: 'decimal', min: '0', step: '0.01', value: (c.bayar_jumlah_rm ?? c.amaun_rm).toFixed(2) });
+  const proof = filePicker({ label: 'Bukti terima', hint: 'Pilihan: tangkap skrin penyata bank.' });
   const err = errBox();
   const btn = el('button', { class: 'btn', type: 'button' }, icon('circle-check'), 'Saya dah terima bayaran');
   btn.addEventListener('click', () => {
@@ -297,12 +416,63 @@ function confirmForm(c) {
     else go();
   });
   return el('section', { class: 'card stack' }, el('h3', null, 'Sahkan terima bayaran'),
-    el('p', { class: 'muted' }, 'Hanya anda boleh mengesahkan ini selepas wang masuk ke akaun bank anda.'), err,
+    el('p', { class: 'muted' }, 'Hanya anda boleh mengesahkan ini selepas wang masuk ke akaun bank anda.'),
+    c.ada_bukti_bayar ? el('div', { class: 'alert alert-info' }, `Syarikat merekod bayaran ${formatRM(c.bayar_jumlah_rm)} pada ${formatDate(c.bayar_tarikh)}.`,
+      el('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => viewFile(c.claim_id, 'bayaran') }, 'Lihat bukti')) : null,
+    err,
     el('div', { class: 'cp-grid' }, field('Tarikh terima', date, { required: true }), field('Jumlah diterima (RM)', amount, { required: true })),
-    el('div', { class: 'field' }, el('span', { class: 'label' }, 'Bukti (pilihan)'), proof.node), el('div', null, btn));
+    el('div', { class: 'field' }, el('span', { class: 'label' }, 'Bukti terima (pilihan)'), proof.node), el('div', null, btn));
 }
 
-// ------------------------------------------------------------------ S-52 Kelulusan (admin sahaja)
+// ------------------------------------------------------------------ rekod bukti bayaran syarikat
+/**
+ * Satu bukti pindahan untuk satu atau beberapa tuntutan Lulus seorang staf (ikut sistem lama: modal bayaran
+ * ikut staf, jumlah setiap tuntutan boleh separa). Status kekal Lulus; staf sahkan terima.
+ */
+function paymentModal(claims, done) {
+  const minDate = claims.map((c) => (c.approved_at || '').slice(0, 10)).sort().pop();
+  const date = inp({ type: 'date', max: todayIso(), min: minDate, value: todayIso() });
+  const amounts = claims.map((c) => inp({ type: 'number', inputmode: 'decimal', min: '0', max: String(c.amaun_rm), step: '0.01', value: c.amaun_rm.toFixed(2), 'aria-label': 'Jumlah dibayar ' + c.claim_id }));
+  const total = el('strong', { class: 'num' });
+  const recalc = () => { clear(total).append(formatRM(amounts.reduce((a, x) => a + (Number(x.value) || 0), 0))); };
+  amounts.forEach((x) => x.addEventListener('input', recalc));
+  recalc();
+  const proof = filePicker({ label: 'Bukti bayaran', hint: 'Wajib: slip pindahan bank / bukti bayaran syarikat (JPG, PNG, PDF).' });
+  const err = errBox();
+  openModal({
+    title: claims.length > 1 ? `Rekod bayaran (${claims.length} tuntutan)` : 'Rekod bayaran ' + claims[0].claim_id,
+    wide: true,
+    body: el('div', { class: 'stack' }, err,
+      el('p', { class: 'muted' }, `${claims[0].staff_name} (${claims[0].staff_id}). Selepas direkod, staf diminta sahkan terima. Status kekal Lulus sehingga staf sahkan.`),
+      el('div', { class: 'table-wrap' }, el('table', { class: 'table' },
+        el('thead', null, el('tr', null, ['ID', 'Jenis', 'Diluluskan', 'Dibayar (RM)'].map((h) => el('th', { scope: 'col' }, h)))),
+        el('tbody', null, claims.map((c, i) => el('tr', null, el('td', null, c.claim_id), el('td', null, c.jenis), el('td', { class: 'num' }, formatRM(c.amaun_rm)), el('td', null, amounts[i])))))),
+      el('div', { class: 'row-between' }, el('span', null, 'Jumlah pindahan: ', total), el('span', { class: 'caption' }, 'Kurang daripada jumlah diluluskan = separa')),
+      field('Tarikh bayaran', date, { required: true }),
+      el('div', { class: 'field' }, el('span', { class: 'label' }, 'Bukti bayaran', el('span', { class: 'req' }, ' *')), proof.node)),
+    actions: [
+      { label: 'Batal', class: 'btn-secondary' },
+      { label: 'Simpan bukti bayaran', onClick: ({ close, button }) => busy(button, async () => {
+        err.hidden = true;
+        const up = proof.get();
+        if (!up) { showErr(err, new Error('Muat naik bukti bayaran dahulu')); return; }
+        const bad = claims.find((c, i) => !(Number(amounts[i].value) > 0) || Number(amounts[i].value) > c.amaun_rm + 0.001);
+        if (bad) { showErr(err, new Error(`Jumlah ${bad.claim_id} mesti lebih 0 dan tidak melebihi ${formatRM(bad.amaun_rm)}`)); return; }
+        try {
+          const r = await call('recordPayment', {
+            claims: claims.map((c, i) => ({ claim_id: c.claim_id, jumlah_dibayar_rm: amounts[i].value })),
+            tarikh_bayar: date.value, bukti: { data: up.data },
+          });
+          close();
+          toast(`Bukti bayaran ${formatRM(r.jumlah_rm)} direkod. Staf dimaklumkan.`, 'success');
+          done && done();
+        } catch (e) { showErr(err, e); }
+      }) },
+    ],
+  });
+}
+
+// ------------------------------------------------------------------ S-52 Kelulusan (admin / ketua)
 async function renderApprovals() {
   if (!isAdmin()) { append(view, el('div', { class: 'alert alert-danger' }, 'Hanya Admin ClaimPro boleh buka skrin ini.')); return; }
   const host = el('div', null, el('div', { class: 'skeleton', style: 'height:160px' }));
@@ -314,21 +484,52 @@ async function renderApprovals() {
     host.append(el('div', { class: 'cp-list' }, rows.map((c) => {
       const card = claimCard(c, {
         actions: [
-          c.ada_resit ? el('button', { class: 'btn btn-secondary btn-sm', type: 'button', onclick: () => viewFile(c.claim_id, 'resit') }, icon('receipt'), 'Resit') : el('span', { class: 'caption' }, 'Tiada resit'),
-          c.boleh_lulus ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => decide(c, 'Lulus') }, icon('check'), 'Lulus') : null,
-          c.boleh_lulus ? el('button', { class: 'btn btn-danger btn-sm', type: 'button', onclick: () => decide(c, 'Ditolak') }, icon('x'), 'Tolak') : el('span', { class: 'badge badge-warning' }, c.sebab_tak_boleh),
+          c.bil_resit ? Array.from({ length: c.bil_resit }, (_, i) => el('button', { class: 'btn btn-secondary btn-sm', type: 'button', onclick: () => viewFile(c.claim_id, 'resit', i) }, icon('receipt'), c.bil_resit > 1 ? `Resit ${i + 1}` : 'Resit'))
+            : el('span', { class: 'caption' }, 'Tiada resit'),
+          c.boleh_lulus ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => approve(c) }, icon('check'), 'Lulus') : null,
+          c.boleh_lulus ? el('button', { class: 'btn btn-danger btn-sm', type: 'button', onclick: () => reject(c) }, icon('x'), 'Tolak') : el('span', { class: 'badge badge-warning' }, c.sebab_tak_boleh),
         ],
       });
       card.prepend(el('div', { class: 'meta', style: 'margin-bottom:6px' }, `${c.staff_name} (${c.staff_id}) · ${c.department}`));
       return card;
     })));
   };
-  async function decide(c, keputusan) {
-    if (keputusan === 'Lulus') {
-      if (!(await confirmDialog('Luluskan tuntutan?', `${c.claim_id}: ${formatRM(c.amaun_rm)} (${c.staff_name}).`, { okLabel: 'Luluskan' }))) return;
-      try { await call('decideClaim', { claim_id: c.claim_id, keputusan }); toast(`${c.claim_id} diluluskan.`, 'success'); await load(); } catch (e) { toast(e.message, 'danger'); await load(); }
-      return;
-    }
+  function approve(c) {
+    const withPay = el('input', { type: 'checkbox' });
+    const date = inp({ type: 'date', max: todayIso(), value: todayIso() });
+    const amount = inp({ type: 'number', inputmode: 'decimal', min: '0', max: String(c.amaun_rm), step: '0.01', value: c.amaun_rm.toFixed(2) });
+    const proof = filePicker({ label: 'Bukti bayaran', hint: 'Slip pindahan bank / bukti bayaran syarikat.' });
+    const payBox = el('div', { class: 'stack', hidden: true }, el('div', { class: 'cp-grid' }, field('Tarikh bayaran', date), field('Jumlah dibayar (RM)', amount)), proof.node);
+    withPay.addEventListener('change', () => { payBox.hidden = !withPay.checked; });
+    const err = errBox();
+    openModal({
+      title: 'Luluskan ' + c.claim_id,
+      body: el('div', { class: 'stack' }, err,
+        el('p', null, `${c.staff_name} · ${c.jenis} · ${formatRM(c.amaun_rm)}`),
+        el('label', { class: 'check' }, withPay, 'Bayaran dah dibuat: muat naik bukti sekarang'),
+        el('p', { class: 'caption' }, 'Jika belum bayar, lulus sahaja. Bukti boleh direkod kemudian di Laporan > Belum dibayar.'),
+        payBox),
+      actions: [
+        { label: 'Batal', class: 'btn-secondary' },
+        { label: 'Luluskan', onClick: ({ close, button }) => busy(button, async () => {
+          err.hidden = true;
+          let bayar;
+          if (withPay.checked) {
+            const up = proof.get();
+            if (!up) { showErr(err, new Error('Muat naik bukti bayaran, atau buang tanda "Bayaran dah dibuat"')); return; }
+            bayar = { bukti: { data: up.data }, tarikh_bayar: date.value, jumlah_dibayar_rm: amount.value };
+          }
+          try {
+            await call('decideClaim', { claim_id: c.claim_id, keputusan: 'Lulus', bayar });
+            close();
+            toast(`${c.claim_id} diluluskan${bayar ? ' dan bayaran direkod' : ''}.`, 'success');
+            await load();
+          } catch (e) { showErr(err, e); }
+        }) },
+      ],
+    });
+  }
+  function reject(c) {
     const why = el('textarea', { class: 'input', rows: 3, maxlength: 300, placeholder: 'Contoh: Resit tak jelas, sila hantar semula' });
     const err = errBox();
     openModal({
@@ -337,7 +538,7 @@ async function renderApprovals() {
       actions: [
         { label: 'Batal', class: 'btn-secondary' },
         { label: 'Tolak tuntutan', class: 'btn-danger', onClick: ({ close, button }) => busy(button, async () => {
-          try { await call('decideClaim', { claim_id: c.claim_id, keputusan, sebab: why.value }); close(); toast(`${c.claim_id} ditolak.`, 'success'); await load(); } catch (e) { showErr(err, e); }
+          try { await call('decideClaim', { claim_id: c.claim_id, keputusan: 'Ditolak', sebab: why.value }); close(); toast(`${c.claim_id} ditolak.`, 'success'); await load(); } catch (e) { showErr(err, e); }
         }) },
       ],
     });
@@ -345,7 +546,7 @@ async function renderApprovals() {
   await load();
 }
 
-// ------------------------------------------------------------------ S-54 Laporan (admin sahaja)
+// ------------------------------------------------------------------ S-54 Laporan (admin / ketua)
 function csvCell(v) {
   let s = v === null || v === undefined ? '' : String(v);
   if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;           // elak formula injection bila dibuka dalam Excel
@@ -353,8 +554,11 @@ function csvCell(v) {
 }
 
 function downloadCsv(name, rows) {
-  const head = ['ID', 'No. pekerja', 'Nama', 'Department', 'Tarikh', 'Jenis', 'Pax', 'Keterangan', 'Amaun RM', 'Status', 'Diluluskan oleh', 'Tarikh terima', 'Diterima RM', 'Beza bayaran'];
-  const lines = [head, ...rows.map((c) => [c.claim_id, c.staff_id, c.staff_name, c.department, c.tarikh, c.jenis, c.pax, c.keterangan, c.amaun_rm.toFixed(2), c.status, c.approved_by_name, c.received_date, c.received_amount_rm === null ? '' : c.received_amount_rm.toFixed(2), c.beza_bayaran ? 'Ya' : ''])];
+  const head = ['ID', 'No. pekerja', 'Nama', 'Department', 'Tarikh', 'Jenis', 'Sesi makan', 'Pax', 'Keterangan', 'Amaun RM', 'Bil. resit', 'Status',
+    'Diluluskan oleh', 'Tarikh bayaran syarikat', 'Dibayar syarikat RM', 'Tarikh terima', 'Diterima RM', 'Beza bayaran'];
+  const money = (v) => (v === null || v === undefined ? '' : Number(v).toFixed(2));
+  const lines = [head, ...rows.map((c) => [c.claim_id, c.staff_id, c.staff_name, c.department, c.tarikh, c.jenis, SESI_LABEL[c.sesi_makan] || '', c.pax, c.keterangan,
+    money(c.amaun_rm), c.bil_resit, c.status, c.approved_by_name, c.bayar_tarikh, money(c.bayar_jumlah_rm), c.received_date, money(c.received_amount_rm), c.beza_bayaran ? 'Ya' : ''])];
   const blob = new Blob(['﻿' + lines.map((l) => l.map(csvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = el('a', { href: url, download: name });
@@ -404,7 +608,7 @@ async function renderReportMain(host) {
             el('td', { 'data-label': 'Staf' }, `${c.staff_name} (${c.department})`),
             el('td', { 'data-label': 'Tarikh' }, formatDate(c.tarikh)), el('td', { 'data-label': 'Jenis' }, c.jenis),
             el('td', { 'data-label': 'Amaun', class: 'num' }, formatRM(c.amaun_rm)),
-            el('td', { 'data-label': 'Status' }, badge(c.status, STATUS_KIND[c.status]), c.beza_bayaran ? badge('Beza', 'warning') : null),
+            el('td', { 'data-label': 'Status' }, el('div', { class: 'chips' }, badge(c.status, STATUS_KIND[c.status]), paidBadge(c), c.beza_bayaran ? badge('Beza', 'warning') : null)),
             el('td', { class: 'actions' }, el('a', { class: 'btn btn-secondary btn-sm', href: '#/c/' + encodeURIComponent(c.claim_id) }, 'Buka'))))))) : emptyState('scroll-text', 'Tiada tuntutan sepadan.'));
     } catch (e) { clear(out).append(el('div', { class: 'alert alert-danger' }, e.message)); }
   });
@@ -415,34 +619,55 @@ async function renderReportMain(host) {
   await run();
 }
 
+/** "Belum dibayar": dikumpul ikut staf (macam sistem lama), pilih beberapa tuntutan, rekod satu bukti bayaran. */
 async function renderToPay(host) {
   const r = await call('listToPay');
+  const groups = new Map();
+  r.tuntutan.forEach((c) => { const k = `${c.staff_id}|${c.staff_name}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
   append(host,
-    el('p', { class: 'muted' }, 'Tuntutan diluluskan yang staf belum sahkan terima. Gunakan senarai ini untuk pindahan wang di luar sistem. Selepas staf sahkan, ia keluar dari senarai.'),
-    el('div', { class: 'cp-stats' }, el('div', { class: 'cp-stat warn' }, el('div', { class: 'label' }, 'Jumlah belum dibayar/disahkan'), el('div', { class: 'v' }, formatRM(r.jumlah_rm))),
-      el('div', { class: 'cp-stat' }, el('div', { class: 'label' }, 'Bilangan'), el('div', { class: 'v' }, String(r.tuntutan.length)))),
-    r.tuntutan.length ? el('div', { class: 'table-wrap responsive', style: 'margin-top:16px' }, el('table', { class: 'table' },
-      el('thead', null, el('tr', null, ['ID', 'Staf', 'Jenis', 'Amaun', 'Diluluskan', 'Menunggu', ''].map((h) => el('th', { scope: 'col' }, h)))),
-      el('tbody', null, r.tuntutan.map((c) => el('tr', null,
-        el('td', { 'data-label': 'ID' }, el('a', { href: '#/c/' + encodeURIComponent(c.claim_id) }, c.claim_id)),
-        el('td', { 'data-label': 'Staf' }, `${c.staff_name} (${c.staff_id})`), el('td', { 'data-label': 'Jenis' }, c.jenis),
-        el('td', { 'data-label': 'Amaun', class: 'num' }, formatRM(c.amaun_rm)), el('td', { 'data-label': 'Diluluskan' }, formatDate(c.approved_at)),
-        el('td', { 'data-label': 'Menunggu' }, badge(`${c.hari_lulus} hari`, c.hari_lulus >= REMIND_DAYS ? 'warning' : '')),
-        el('td', { class: 'actions' }, el('a', { class: 'btn btn-secondary btn-sm', href: '#/c/' + encodeURIComponent(c.claim_id) }, 'Buka'))))))) : emptyState('circle-check', 'Tiada tuntutan menunggu pembayaran.'));
+    el('p', { class: 'muted' }, 'Tuntutan diluluskan yang staf belum sahkan terima. Selepas buat pindahan wang, pilih tuntutan dan muat naik bukti bayaran sebagai evidence. Tuntutan keluar dari senarai bila staf sahkan terima.'),
+    el('div', { class: 'cp-stats' },
+      el('div', { class: 'cp-stat warn' }, el('div', { class: 'label' }, 'Jumlah belum dibayar / disahkan'), el('div', { class: 'v' }, formatRM(r.jumlah_rm))),
+      el('div', { class: 'cp-stat' }, el('div', { class: 'label' }, 'Bilangan'), el('div', { class: 'v' }, String(r.tuntutan.length))),
+      el('div', { class: 'cp-stat ' + (r.tanpa_bukti_bayar ? 'warn' : 'ok') }, el('div', { class: 'label' }, 'Belum ada bukti bayaran'), el('div', { class: 'v' }, String(r.tanpa_bukti_bayar)))));
+  if (!r.tuntutan.length) { host.append(emptyState('circle-check', 'Tiada tuntutan menunggu pembayaran.')); return; }
+  const list = el('div', { class: 'cp-list', style: 'margin-top:16px' });
+  for (const [, claims] of groups) {
+    const boxes = claims.map((c) => el('input', { type: 'checkbox', disabled: !c.boleh_rekod_bayar, checked: c.boleh_rekod_bayar && !c.ada_bukti_bayar, 'aria-label': 'Pilih ' + c.claim_id }));
+    const btn = el('button', { class: 'btn btn-sm', type: 'button' }, icon('plus'), 'Rekod bayaran');
+    const sync = () => { const n = boxes.filter((b) => b.checked).length; btn.disabled = !n; clear(btn).append(icon('plus'), n ? `Rekod bayaran (${n})` : 'Rekod bayaran'); };
+    boxes.forEach((b) => b.addEventListener('change', sync));
+    btn.addEventListener('click', () => paymentModal(claims.filter((_, i) => boxes[i].checked), () => { clear(host); renderToPay(host); }));
+    sync();
+    const total = claims.reduce((a, c) => a + c.amaun_rm, 0);
+    list.append(el('article', { class: 'cp-card' },
+      el('div', { class: 'top' }, el('div', null, el('strong', null, claims[0].staff_name), el('div', { class: 'meta' }, `${claims[0].staff_id} · ${claims[0].department} · ${claims.length} tuntutan`)),
+        el('div', { class: 'amt' }, formatRM(total))),
+      el('ul', { class: 'file-list', style: 'margin-top:8px' }, claims.map((c, i) => el('li', null,
+        el('label', { class: 'check grow' }, boxes[i], el('span', null, el('a', { href: '#/c/' + encodeURIComponent(c.claim_id) }, c.claim_id), ` · ${c.jenis} · ${formatRM(c.amaun_rm)} · ${c.hari_lulus} hari`)),
+        c.ada_bukti_bayar ? el('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => viewFile(c.claim_id, 'bayaran') }, paidBadge(c)) : badge('Belum ada bukti', 'warning'),
+        c.boleh_rekod_bayar ? null : el('span', { class: 'caption' }, 'Head of HR sahaja')))),
+      el('div', { class: 'row' }, btn)));
+  }
+  host.append(list);
 }
 
 async function renderTypes(host) {
   const draw = async () => {
-    const tp = await loadTypes(true);
+    const tp = await loadTypes();
     clear(host);
     append(host,
-      el('div', { class: 'row-between' }, el('p', { class: 'muted', style: 'margin:0' }, 'Jenis tuntutan yang staf boleh pilih. Had RM dan keperluan resit disemak di server.'),
+      el('div', { class: 'row-between' }, el('p', { class: 'muted', style: 'margin:0' }, 'Jenis tuntutan yang staf boleh pilih. Had dan keperluan resit disemak di server. Kadar sesi makan diubah dalam tab Settings Sheet VP-ClaimPro.'),
         el('button', { class: 'btn', type: 'button', onclick: () => typeModal(null, draw) }, icon('plus'), 'Jenis baharu')),
       el('div', { class: 'table-wrap responsive', style: 'margin-top:16px' }, el('table', { class: 'table' },
-        el('thead', null, el('tr', null, ['Jenis', 'Had (RM)', 'Resit', 'Status', ''].map((h) => el('th', { scope: 'col' }, h)))),
+        el('thead', null, el('tr', null, ['Jenis', 'Had setiap tuntutan', 'Had tahunan', 'Sesi makan', 'Resit', 'Status', ''].map((h) => el('th', { scope: 'col' }, h)))),
         el('tbody', null, tp.map((t) => el('tr', null,
-          el('td', { 'data-label': 'Jenis' }, el('strong', null, t.jenis)), el('td', { 'data-label': 'Had (RM)', class: 'num' }, t.had_rm ? formatRM(t.had_rm) : 'Tiada had'),
-          el('td', { 'data-label': 'Resit' }, t.perlu_resit ? 'Wajib' : 'Tak wajib'), el('td', { 'data-label': 'Status' }, badge(t.aktif ? 'Aktif' : 'Tak aktif', t.aktif ? 'success' : '')),
+          el('td', { 'data-label': 'Jenis' }, el('strong', null, t.jenis)),
+          el('td', { 'data-label': 'Had setiap tuntutan', class: 'num' }, t.had_rm ? formatRM(t.had_rm) : '-'),
+          el('td', { 'data-label': 'Had tahunan', class: 'num' }, t.had_tahunan_rm ? formatRM(t.had_tahunan_rm) : '-'),
+          el('td', { 'data-label': 'Sesi makan' }, t.guna_sesi_makan ? `Siang ${formatRM(t.kadar_makan.siang)} · Malam ${formatRM(t.kadar_makan.malam)} · Kedua ${formatRM(t.kadar_makan.kedua)}` : '-'),
+          el('td', { 'data-label': 'Resit' }, t.perlu_resit ? 'Wajib' : 'Tak wajib'),
+          el('td', { 'data-label': 'Status' }, badge(t.aktif ? 'Aktif' : 'Tak aktif', t.aktif ? 'success' : '')),
           el('td', { class: 'actions' }, el('button', { class: 'btn btn-secondary btn-sm', type: 'button', onclick: () => typeModal(t, draw) }, icon('pencil'), 'Ubah'))))))));
   };
   await draw();
@@ -451,17 +676,27 @@ async function renderTypes(host) {
 function typeModal(t, done) {
   const nama = inp({ value: t?.jenis || '', maxlength: 40, disabled: Boolean(t) });
   const had = inp({ type: 'number', inputmode: 'decimal', min: '0', step: '0.01', value: t?.had_rm ?? '', placeholder: 'Kosong = tiada had' });
+  const hadTahunan = inp({ type: 'number', inputmode: 'decimal', min: '0', step: '0.01', value: t?.had_tahunan_rm ?? '', placeholder: 'Kosong = tiada had' });
+  const sesi = el('input', { type: 'checkbox', checked: t ? t.guna_sesi_makan : false });
   const resit = el('input', { type: 'checkbox', checked: t ? t.perlu_resit : true });
   const aktif = el('input', { type: 'checkbox', checked: t ? t.aktif : true });
   const err = errBox();
   openModal({
     title: t ? 'Ubah ' + t.jenis : 'Jenis tuntutan baharu',
-    body: el('div', { class: 'stack' }, err, field('Nama jenis', nama, { required: true, hint: t ? 'Nama tak boleh ditukar (tuntutan lama merujuknya).' : '' }), field('Had amaun (RM)', had),
-      el('label', { class: 'check' }, resit, 'Resit wajib semasa hantar'), el('label', { class: 'check' }, aktif, 'Aktif (staf boleh pilih)')),
+    body: el('div', { class: 'stack' }, err,
+      field('Nama jenis', nama, { required: true, hint: t ? 'Nama tak boleh ditukar (tuntutan lama merujuknya).' : '' }),
+      field('Had setiap tuntutan (RM)', had),
+      field('Had tahunan setiap staf (RM)', hadTahunan, { hint: 'Contoh: Perubatan RM350 setahun (sistem lama). Dikira ikut tahun tarikh perbelanjaan.' }),
+      el('label', { class: 'check' }, sesi, 'Had ikut sesi makan (Siang / Malam) x pax'),
+      el('label', { class: 'check' }, resit, 'Resit wajib semasa hantar'),
+      el('label', { class: 'check' }, aktif, 'Aktif (staf boleh pilih)')),
     actions: [
       { label: 'Batal', class: 'btn-secondary' },
       { label: 'Simpan', onClick: ({ close, button }) => busy(button, async () => {
-        try { await call('saveClaimType', { jenis: nama.value, had_rm: had.value, perlu_resit: resit.checked, aktif: aktif.checked }); close(); toast('Jenis disimpan.', 'success'); done(); } catch (e) { showErr(err, e); }
+        try {
+          await call('saveClaimType', { jenis: nama.value, had_rm: had.value, had_tahunan_rm: hadTahunan.value, guna_sesi_makan: sesi.checked, perlu_resit: resit.checked, aktif: aktif.checked });
+          close(); toast('Jenis disimpan.', 'success'); done();
+        } catch (e) { showErr(err, e); }
       }) },
     ],
   });

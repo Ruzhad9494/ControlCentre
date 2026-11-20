@@ -12,6 +12,14 @@ Peraturan (dikemas kini pemilik 20/11/2026):
 
 Sistem **tak membaca designation** (Manager / Head / apa-apa). Kuasa ikut role yang ditanda di Admin > Akses modul. Tiada siapa (termasuk ketua) boleh tanda tuntutan orang lain sebagai Dibayar.
 
+> **Dah setup ClaimPro sebelum 20/11/2026 (petang)?** Kod dikemas kini ikut sistem lama dan bukti bayaran syarikat. Buat ini sahaja:
+> 1. Merge PR terbaru ke `main` (Langkah 1).
+> 2. Dalam projek `VP-claimpro`: ganti isi fail **Actions, Files, Notify, Schema, Setup** dengan versi GitHub terbaru. Ctrl+S.
+> 3. Run **`setupSystem`** (tambah lajur baharu `sesi_makan`, `paid_*`, `had_tahunan_rm`, `guna_sesi_makan` dan kunci Settings `kadar_makan_*`; data sedia ada tak disentuh).
+> 4. Run **`syncOldClaimRules`** (betulkan nama "Makan & Minum", tambah Keraian, Perubatan RM350 setahun, sesi makan).
+> 5. **Deploy > Manage deployments > pensel > New version > Deploy.**
+> 6. Uji #15 hingga #19 di bawah.
+
 ---
 
 ## Langkah 1 - Merge ke `main` (GitHub)
@@ -75,12 +83,12 @@ $b = New-Object byte[] 48; [Security.Cryptography.RandomNumberGenerator]::Create
 Kemudian dalam editor:
 
 1. Run **`checkConfig`**. Log: `checkConfig OK (ENV=prod)`.
-2. Run **`setupSystem`**. Google akan minta kebenaran **Drive** dan **hantar emel**; benarkan. Log: `setupSystem selesai: VP-ClaimPro | ClaimTypes (baru) seed=6 | Claims (baru) | Approvals (baru) | Settings (baru) seed=4 | ...`
+2. Run **`setupSystem`**. Google akan minta kebenaran **Drive** dan **hantar emel**; benarkan. Log: `setupSystem selesai: VP-ClaimPro | ClaimTypes (baru) seed=6 | Claims (baru) | Approvals (baru) | Settings (baru) seed=7 | ...`
 3. Buka Sheet `VP-ClaimPro` > tab **Settings**, isi lajur `value`:
    - `portal_url`: contoh `https://voltake-portal.pages.dev` (tanpa `/` di hujung)
    - `admin_notify_emails`: emel yang terima "tuntutan baru" dan "beza bayaran" (satu peti emel HR, atau beberapa emel dipisah koma)
    - `head_report_email`: emel Head of HR (laporan bulanan beza bayaran)
-4. Tab **ClaimTypes**: 6 jenis awal diambil dari sistem lama (Perjalanan, Makan & Minuman, Penginapan, Perubatan, Keraian, Lain-lain). Nama "Makan & Minuman" saya agak dari paparan terpotong: betulkan jika berbeza. **Semua ditetapkan resit wajib**, sedangkan sistem lama membenarkan "Tiada Resit". Semak di portal selepas Langkah 8 (Laporan > Jenis tuntutan): tetapkan jenis mana yang resit tak wajib, dan had RM jika ada.
+4. Tab **ClaimTypes**: 6 jenis ikut sistem lama (Perjalanan, Makan & Minum, Keraian, Penginapan, Perubatan, Lain-lain) dengan peraturan lama: Perubatan had RM350 setahun setiap staf; Makan & Minum had ikut sesi (Siang RM10, Malam RM15, kedua-dua RM25) x pax; semua jenis perlu sekurang-kurangnya satu resit. Kadar makan boleh diubah dalam tab **Settings** (`kadar_makan_*`). Perbandingan penuh lama vs baharu: `docs/rujukan-sistem-lama.md`.
 5. Menu **Triggers** (ikon jam): patut ada 3 trigger (`dailyArchive`, `dailyReminders`, `monthlyBezaReport`).
 
 ## Langkah 6 - Deploy web app
@@ -131,6 +139,11 @@ Uji dengan akaun sebenar (taip `/claimpro/` terus):
 | 12 | Laporan > pilih bulan > Eksport CSV, buka dalam Excel | Tiada emel staf; sel `=...` dipapar sebagai teks |
 | 13 | Folder Drive `VP-Files` | Tiada "anyone with link"; tiada dikongsi ke Gmail staf |
 | 14 | `VP-ClaimPro` > File > Share > Publish to web | Tiada yang diterbitkan |
+| 15 | Makan & Minum, 2 pax, Siang, RM25 | Ditolak: had RM20. RM20 diterima |
+| 16 | Perubatan RM300, kemudian RM60 (tahun sama) | Kedua ditolak: baki tinggal RM50. Baki dipapar di Tuntutan saya |
+| 17 | Tuntutan dengan 3 resit (gambar + PDF) | Butang Resit 1, 2, 3 di butiran |
+| 18 | Admin HR: Lulus dengan tanda "Bayaran dah dibuat" + slip | Lulus, bukti bayaran direkod, staf dapat emel dengan jumlah |
+| 19 | Laporan > Belum dibayar: pilih 2 tuntutan seorang staf, satu jumlah kurang, satu slip | Kedua-dua ada bukti; satu ditanda "Separa"; staf dapat satu emel. Staf sahkan terima: jumlah pra-isi ikut bayaran syarikat |
 
 Padam tuntutan ujian dari Sheet (atau tanda `deleted` = TRUE) sebelum go-live.
 

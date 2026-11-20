@@ -1,8 +1,10 @@
-// receipt.js - sediakan fail resit/bukti di browser (BSD 5: JPG/PNG/HEIC/PDF, maksimum 8MB).
+// receipt.js - sediakan fail resit/bukti di browser. Had ikut sistem ClaimPro lama:
+// JPG/PNG/HEIC/WEBP/PDF, maksimum 10MB sefail, 10 fail satu tuntutan.
 // Foto telefon dikecilkan (maks 1600px, JPEG 0.82) supaya muat naik laju di data mudah alih;
 // PDF dan imej yang tak boleh dinyahkod dihantar asal. Pelayan tetap sahkan jenis dari ISI fail.
 
-export const MAX_BYTES = 8 * 1024 * 1024;
+export const MAX_BYTES = 10 * 1024 * 1024;
+export const MAX_FILES = 10;
 const MAX_SIDE = 1600;
 
 export function toBase64(blob) {
@@ -40,9 +42,9 @@ async function shrinkImage(file) {
 export async function prepareFile(file) {
   if (!file) throw new Error('Tiada fail dipilih');
   const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-  const isImg = /^image\//.test(file.type) || /\.(jpe?g|png|heic|heif)$/i.test(file.name);
-  if (!isPdf && !isImg) throw new Error('Hanya gambar (JPG, PNG, HEIC) atau PDF dibenarkan');
+  const isImg = /^image\//.test(file.type) || /\.(jpe?g|png|heic|heif|webp)$/i.test(file.name);
+  if (!isPdf && !isImg) throw new Error('Hanya gambar (JPG, PNG, HEIC, WEBP) atau PDF dibenarkan');
   const blob = isPdf ? file : await shrinkImage(file);
-  if (blob.size > MAX_BYTES) throw new Error('Fail melebihi 8MB. Ambil gambar semula dengan resolusi lebih rendah.');
+  if (blob.size > MAX_BYTES) throw new Error('Fail melebihi 10MB. Ambil gambar semula dengan resolusi lebih rendah.');
   return { data: await toBase64(blob), blob, mime: blob.type || file.type, size: blob.size, nama: file.name };
 }

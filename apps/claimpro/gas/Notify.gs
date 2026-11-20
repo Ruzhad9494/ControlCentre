@@ -43,8 +43,29 @@ function notifyStaffDecision_(ss, claim) {
   var ok = claim.status === 'Lulus';
   mail_(claim.staff_email,
     '[Voltake ClaimPro] Tuntutan ' + claim.claim_id + (ok ? ' diluluskan' : ' ditolak'),
-    'Tuntutan ' + claim.jenis + ' RM ' + Number(claim.amaun_rm).toFixed(2) + ' anda ' + (ok ? 'telah diluluskan.\n\nSelepas anda terima bayaran, sila sahkan di: ' : 'ditolak.\nSebab: ' + claim.sebab_tolak + '\n\nLihat di: ') +
+    'Tuntutan ' + claim.jenis + ' RM ' + Number(claim.amaun_rm).toFixed(2) + ' anda ' + (ok ? 'telah diluluskan.' + paidLine_(claim) + '\n\nSelepas anda terima bayaran, sila sahkan di: ' : 'ditolak.\nSebab: ' + claim.sebab_tolak + '\n\nLihat di: ') +
     portalLink_(s, '#/c/' + encodeURIComponent(claim.claim_id)) + MAIL_FOOT);
+}
+
+function paidLine_(claim) {
+  return String(claim.paid_proof_file_id || '') && claim.paid_date
+    ? '\nSyarikat telah merekod bayaran RM ' + Number(claim.paid_amount_rm).toFixed(2) + ' pada ' + dateStr_(claim.paid_date) + '.'
+    : '';
+}
+
+/** Bukti bayaran syarikat direkod (satu bukti boleh untuk beberapa tuntutan staf yang sama): minta staf sahkan. */
+function notifyStaffPaid_(ss, claims) {
+  var list = Array.isArray(claims) ? claims : [claims];
+  if (!list.length) return;
+  var s = settingsMap_(ss);
+  var lines = list.map(function (c) {
+    var separa = Number(c.paid_amount_rm) < Number(c.amaun_rm) - 0.001;
+    return '- ' + c.claim_id + ' (' + c.jenis + '): RM ' + Number(c.paid_amount_rm).toFixed(2) + (separa ? ' daripada RM ' + Number(c.amaun_rm).toFixed(2) + ' (separa)' : '');
+  });
+  mail_(list[0].staff_email,
+    '[Voltake ClaimPro] Bayaran tuntutan telah direkod',
+    'Syarikat merekod bayaran pada ' + dateStr_(list[0].paid_date) + ':\n' + lines.join('\n') +
+    '\n\nSila semak akaun bank anda. Jika dah terima, sahkan setiap tuntutan di: ' + portalLink_(s, '#/') + MAIL_FOOT);
 }
 
 function notifyBeza_(ss, claim) {

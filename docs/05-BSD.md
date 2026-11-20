@@ -227,7 +227,7 @@ Tab `ID PASSWORD` lama **tidak wujud** dalam sistem baru.
 ### 3.6 VP-ClaimPro (F-50 hingga F-53)
 
 #### `ClaimTypes`
-`jenis` (unik: `Perjalanan`, `Makan`, `Perubatan`, `Penginapan`, `Lain-lain`, **sahkan senarai sebenar dari ClaimPro lama**), `had_rm` (pilihan), `perlu_resit` (bool), `aktif`.
+`jenis` (unik; seed ikut ClaimPro lama: `Perjalanan`, `Makan & Minum`, `Keraian`, `Penginapan`, `Perubatan`, `Lain-lain`), `had_rm` (had setiap tuntutan, pilihan), `had_tahunan_rm` (had setiap staf setahun ikut tahun tarikh; Perubatan 350 dari sistem lama), `guna_sesi_makan` (bool; Makan & Minum), `perlu_resit` (bool), `aktif`. Perbandingan penuh: `docs/rujukan-sistem-lama.md`.
 
 #### `Claims`
 | Field | Jenis | Wajib | Penerangan |
@@ -249,6 +249,9 @@ Tab `ID PASSWORD` lama **tidak wujud** dalam sistem baru.
 | submitted_at | datetime | tidak | Masa dihantar (tambahan Fasa 2B) |
 | approved_by_name | text | tidak | Nama pelulus untuk paparan; emel pelulus kekal dalam `approved_by` (tambahan Fasa 2B) |
 | peringatan_at | datetime | tidak | Masa peringatan "sahkan terima bayaran" terakhir dihantar; ulang setiap 7 hari (tambahan Fasa 2B) |
+| sesi_makan | enum | ikut jenis | `siang`, `malam`, `siang+malam` bila jenis `guna_sesi_makan`. Had = kadar sesi x pax (sistem lama) |
+| receipt_file_id | text | ya bila hantar | **Senarai** ID fail dipisah koma, 1-10 fail (sistem lama: MAX_FILES_PER_CLAIM 10, 10MB sefail) |
+| paid_proof_file_id, paid_by, paid_by_name, paid_date, paid_amount_rm, paid_recorded_at | | tidak | Bukti bayaran **syarikat** direkod admin/ketua (evidence). Satu fail boleh dikongsi beberapa tuntutan staf yang sama. `paid_amount_rm` ≤ `amaun_rm` (kurang = separa). Tidak menukar status (tambahan 20/11/2026) |
 
 Nota pelaksanaan Fasa 2B (peraturan pemilik 20/11/2026): pelulus ialah `admin` (Admin HR) dan `ketua` (Head of HR). `admin` tak boleh lulus tuntutan sendiri dan tak boleh lulus tuntutan staf `department` = `HR`; hanya `ketua` boleh, termasuk tuntutan `ketua` sendiri. Sistem tak membaca `designation`; kuasa ditentukan oleh role di S-05. `superadmin` portal bukan automatik pelulus (beri role `admin`/`ketua` di S-05 jika perlu, dan ia direkod dalam AccessChangeLog). Setiap bacaan resit/bukti direkod dalam `AuditLog` (`VIEW_FILE`). Laporan (S-54) membaca tab `Claims` sahaja; tuntutan yang dah diarkib (`Archive_YYYY`) tak termasuk.
 
@@ -256,7 +259,7 @@ Asingan tugas ClaimPro: Admin (HR, Head of Strategic Planner) lulus; HR buat pin
 | + medan audit | | | |
 
 #### `Settings` (tambahan Fasa 2B)
-`key`, `value`, `nota`. Bukan rahsia: `portal_url` (pautan dalam emel), `admin_notify_emails` (penerima emel "tuntutan baru" dan "beza bayaran", pisah koma), `head_report_email` (laporan bulanan beza bayaran, Head of HR), `reminder_hari` (lalai 14).
+`key`, `value`, `nota`. Bukan rahsia: `portal_url` (pautan dalam emel), `admin_notify_emails` (penerima emel "tuntutan baru" dan "beza bayaran", pisah koma), `head_report_email` (laporan bulanan beza bayaran, Head of HR), `reminder_hari` (lalai 14). `kadar_makan_siang` / `kadar_makan_malam` / `kadar_makan_kedua` (RM setiap pax; lalai 10 / 15 / 25 dari sistem lama).
 
 #### `Approvals`
 `id`, `claim_id`, `dari_status`, `ke_status`, `oleh_email`, `ts`, `catatan`. Satu baris setiap peralihan.
@@ -394,7 +397,7 @@ Senarai `ACTION_ROLES` penuh untuk setiap modul ditulis dalam `apps/<modul>/gas/
 | Modul | Folder Drive (dalam `VP-Files/`) | Jenis | Had | Akses |
 |---|---|---|---|---|
 | hr | `HR/Resume`, `HR/Photo` | PDF, JPG/PNG | 5MB | hr_admin, interviewer (dept) melalui `getFile` |
-| claimpro | `ClaimPro/Receipts/YYYY-MM`, `ClaimPro/Payments` | JPG/PNG/HEIC/PDF | 8MB | pemilik tuntutan, claimpro `admin` |
+| claimpro | `ClaimPro/Receipts/YYYY-MM`, `ClaimPro/Payments` (bukti terima staf + bukti bayaran syarikat) | JPG/PNG/HEIC/WEBP/PDF | 10MB sefail, 10 resit | pemilik tuntutan, claimpro `admin`/`ketua` |
 | gwr | `GWR/<dept>/Images`, `Signatures`, `PDF` | JPG/PNG, PDF | 5MB/gambar, 10 gambar | staf pemilik, dept (engineer ke atas) melalui `getFile`. PDF final dihantar sebagai lampiran emel kepada staf & klien (tiada perkongsian Drive) |
 | ams | `AMS/Photos`, `AMS/Certs`, `AMS/Audits` | JPG/PNG/PDF | 8MB | role ams |
 | compliance | `Compliance/Vehicles`, `Chargeman`, `StaffCerts` | PDF/JPG/PNG | 8MB | hr_admin, pss, pemilik sijil |
