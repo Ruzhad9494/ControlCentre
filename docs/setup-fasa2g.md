@@ -1,4 +1,4 @@
-# Setup Fasa 2G - ClaimReport (DO Generator Sungrow) Selesai
+# Setup Fasa 2G - ClaimReport (DO Generator Sungrow) selesai
 
 Terus ke production, tiada staging. Ikut langkah 1 hingga 9 mengikut susunan. Kad modul kekal "Akan datang" sehingga langkah 9 siap.
 
