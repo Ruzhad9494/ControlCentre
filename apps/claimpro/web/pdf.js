@@ -1,15 +1,16 @@
 // Laporan PDF ClaimPro untuk dihantar kepada pengurusan atasan.
-// Ikut sistem lama (voltake-energy/claimpro index.html: exportAdminPDF / exportSingleAdminPDF):
-// jsPDF + autoTable, satu halaman setiap staf, lajur ID / Tarikh, Tujuan / Kategori, Kasar, Dibayar, Baki, Status.
-// Tambahan: halaman ringkasan (ikut status, jenis, staf), penapis yang digunakan, "SULIT", nombor halaman.
-// Pustaka dihos sendiri (/shared/vendor) dan hanya dimuat bila pengguna tekan PDF (CSP script-src 'self').
-// TIADA emel staf dalam PDF.
-import { formatRM, formatDate, formatDateTime } from '/shared/lib/format.js';
+// Format DITIRU dari sistem lama (voltake-energy/claimpro index.html: exportAdminPDF / exportSingleAdminPDF):
+//   tajuk biru "Laporan Terperinci Tuntutan Pekerja" (16pt, RGB 17,141,255), "Nama Pekerja", "Tarikh Janaan",
+//   "Jumlah Kasar: RM x  |  Dibayar: RM y  |  Baki: RM z", jadual striped kepala biru
+//   [ID / Tarikh, Tujuan / Kategori, Kasar, Dibayar, Baki, Status], satu muka surat setiap staf,
+//   nama fail Laporan_Terperinci_HR_<YYYY-MM-DD>.pdf / Laporan_<Nama>_<YYYY-MM-DD>.pdf.
+// Tambahan (diminta pemilik 20/11/2026): muka surat ringkasan di depan (ikut status, jenis, staf), gaya yang sama.
+// Tarikh dipapar DD/MM/YYYY. Pustaka dihos sendiri (/shared/vendor), dimuat bila pengguna tekan PDF. TIADA emel staf.
+import { formatDate } from '/shared/lib/format.js';
 
 const VENDOR = ['/shared/vendor/jspdf.umd.min.js', '/shared/vendor/jspdf.plugin.autotable.min.js'];
-const NAVY = [11, 37, 69];
-const MUTED = [100, 116, 139];
-const SESI = { siang: 'Siang', malam: 'Malam', 'siang+malam': 'Siang + Malam' };
+const BLUE = [17, 141, 255];
+const TEXT = [50, 50, 50];
 let loading = null;
 
 function loadScript(src) {
@@ -25,7 +26,7 @@ function loadScript(src) {
 export function loadJsPdf() {
   if (!loading) {
     loading = (async () => {
-      for (const src of VENDOR) await loadScript(src);
+      if (!(window.jspdf && window.jspdf.jsPDF)) for (const src of VENDOR) await loadScript(src);
       const J = window.jspdf && window.jspdf.jsPDF;
       if (!J || typeof new J().autoTable !== 'function') throw new Error('Pustaka PDF tidak lengkap.');
       return J;
@@ -65,134 +66,59 @@ function totals(claims) {
   }, { bilangan: 0, kasar: 0, dibayar: 0, baki: 0 });
 }
 
-function header(doc, title, lines) {
-  const w = doc.internal.pageSize.getWidth();
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, w, 22, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.text('Voltake ClaimPro', 14, 14);
-  doc.setFontSize(9);
-  doc.text('SULIT', w - 14, 14, { align: 'right' });
-  doc.setTextColor(...NAVY);
-  doc.setFontSize(15);
-  doc.text(title, 14, 34);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
-  doc.setTextColor(40, 40, 40);
-  let y = 41;
-  for (const l of lines) { doc.text(l, 14, y); y += 5.5; }
-  return y + 2;
-}
-
-function statLine(doc, y, t) {
-  const w = doc.internal.pageSize.getWidth() - 28;
-  const cells = [['Bilangan', String(t.bilangan)], ['Jumlah kasar', formatRM(t.kasar)], ['Dibayar', formatRM(t.dibayar)], ['Baki', formatRM(t.baki)]];
-  const cw = w / cells.length;
-  cells.forEach(([k, v], i) => {
-    const x = 14 + i * cw;
-    doc.setDrawColor(203, 213, 225);
-    doc.roundedRect(x, y, cw - 3, 16, 2, 2, 'S');
-    doc.setFontSize(8);
-    doc.setTextColor(...MUTED);
-    doc.text(k, x + 3, y + 5.5);
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...NAVY);
-    doc.text(v, x + 3, y + 12.5);
-    doc.setFont('helvetica', 'normal');
-  });
-  return y + 22;
-}
-
+const RM = (n) => 'RM ' + Number(n || 0).toFixed(2);   // sistem lama: "RM " + toFixed(2)
 const TABLE = {
   theme: 'striped',
-  headStyles: { fillColor: NAVY, textColor: 255, fontStyle: 'bold' },
-  styles: { fontSize: 8.5, cellPadding: 2, overflow: 'linebreak' },
-  margin: { left: 14, right: 14, top: 28 },
+  headStyles: { fillColor: BLUE },
+  styles: { fontSize: 9, cellPadding: 3 },
 };
-const R = { halign: 'right' };
-/** Lajur nombor: isi DAN tajuk/jumlah sejajar kanan. */
-function rightCols(...idx) {
-  const columnStyles = Object.fromEntries(idx.map((i) => [i, R]));
-  return { columnStyles, didParseCell: (d) => { if (idx.includes(d.column.index)) d.cell.styles.halign = 'right'; } };
-}
+const stamp = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
 
-function sectionTitle(doc, y, text) {
-  if (y > doc.internal.pageSize.getHeight() - 40) { doc.addPage(); y = 30; }
-  doc.setFont('helvetica', 'bold');
+/** Satu muka surat staf, sama seperti exportAdminPDF lama. */
+function staffPage(doc, g) {
+  doc.setFontSize(16);
+  doc.setTextColor(...BLUE);
+  doc.text('Laporan Terperinci Tuntutan Pekerja', 14, 15);
   doc.setFontSize(11);
-  doc.setTextColor(...NAVY);
-  doc.text(text, 14, y);
-  doc.setFont('helvetica', 'normal');
-  return y + 3;
-}
-
-function staffPage(doc, g, meta) {
-  let y = header(doc, 'Laporan Terperinci Tuntutan Pekerja', [
-    `Nama Pekerja: ${g.staff_name}   No. Pekerja: ${g.staff_id || '-'}   Department: ${g.department || '-'}`,
-    `Tempoh: ${meta.tempoh}`,
-    `Tarikh Janaan: ${meta.dijana}`,
-  ]);
-  y = statLine(doc, y, g);
+  doc.setTextColor(...TEXT);
+  doc.text(`Nama Pekerja: ${g.staff_name}`, 14, 23);
+  doc.text(`Tarikh Janaan: ${formatDate(new Date())}`, 14, 29);
+  doc.setFontSize(10);
+  doc.text(`Jumlah Kasar: ${RM(g.kasar)}  |  Dibayar: ${RM(g.dibayar)}  |  Baki: ${RM(g.baki)}`, 14, 35);
+  const rows = [...g.tuntutan].sort((a, b) => String(b.tarikh).localeCompare(String(a.tarikh)) || String(b.claim_id).localeCompare(String(a.claim_id)));
   doc.autoTable({
     ...TABLE,
-    startY: y,
     head: [['ID / Tarikh', 'Tujuan / Kategori', 'Kasar', 'Dibayar', 'Baki', 'Status']],
-    body: g.tuntutan.map((c) => {
+    body: rows.map((c) => {
       const a = amounts(c);
-      const kat = c.jenis + (c.sesi_makan ? ` (${SESI[c.sesi_makan] || c.sesi_makan})` : '') + (c.pax ? `, ${c.pax} pax` : '');
-      const st = c.status + (c.separa && c.status === 'Lulus' ? ' (separa)' : '') + (c.beza_bayaran ? ' (beza)' : '');
-      return [`${c.claim_id}\n${formatDate(c.tarikh)}`, `${c.keterangan}\n${kat}`, formatRM(a.kasar), a.kira ? formatRM(a.dibayar) : '-', a.kira ? formatRM(a.baki) : '-', st];
+      return [`${c.claim_id}\n${formatDate(c.tarikh)}`, c.keterangan || c.jenis, RM(a.kasar), RM(a.dibayar), RM(a.baki), c.status];
     }),
-    foot: [['Jumlah', `${g.bilangan} tuntutan (tidak termasuk Ditolak)`, formatRM(g.kasar), formatRM(g.dibayar), formatRM(g.baki), '']],
-    footStyles: { fillColor: [226, 232, 240], textColor: 20, fontStyle: 'bold' },
-    ...rightCols(2, 3, 4),
-    columnStyles: { 0: { cellWidth: 30 }, 2: R, 3: R, 4: R, 5: { cellWidth: 24 } },
+    startY: 40,
+    columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'center' } },
   });
-}
-
-function footer(doc, meta) {
-  const n = doc.internal.getNumberOfPages();
-  const w = doc.internal.pageSize.getWidth();
-  const h = doc.internal.pageSize.getHeight();
-  for (let i = 1; i <= n; i++) {
-    doc.setPage(i);
-    doc.setFontSize(7.5);
-    doc.setTextColor(...MUTED);
-    doc.text(`SULIT - Voltake ClaimPro - dijana ${meta.dijana} oleh ${meta.oleh}`, 14, h - 8);
-    doc.text(`Halaman ${i} / ${n}`, w - 14, h - 8, { align: 'right' });
-  }
-}
-
-function stamp() {
-  const d = new Date(Date.now() + 8 * 3600e3).toISOString();
-  return d.slice(0, 10);
 }
 
 /**
- * Laporan penuh: halaman ringkasan + satu halaman setiap staf.
+ * Laporan penuh: muka surat ringkasan + satu muka surat setiap staf (sistem lama: exportAdminPDF).
  * opts: { claims, tempoh, penapis: [teks], oleh, terpotong }
  */
 export async function exportReportPdf({ claims, tempoh, penapis = [], oleh, terpotong }) {
   const JsPDF = await loadJsPdf();
-  const doc = new JsPDF({ unit: 'mm', format: 'a4' });
-  const meta = { tempoh, dijana: formatDateTime(new Date()), oleh };
+  const doc = new JsPDF();
   const groups = groupByStaff(claims);
-  let y = header(doc, 'Laporan Tuntutan Pekerja', [
-    `Tempoh (tarikh perbelanjaan): ${tempoh}`,
-    penapis.length ? `Penapis: ${penapis.join(', ')}` : 'Penapis: semua jenis, semua status (kecuali Draf)',
-    `Tarikh Janaan: ${meta.dijana}   Disediakan oleh: ${oleh}`,
-  ]);
-  y = statLine(doc, y, totals(claims));
-  if (terpotong) {
-    doc.setTextColor(180, 83, 9);
-    doc.setFontSize(8.5);
-    doc.text('Nota: data melebihi 2,000 tuntutan; hanya 2,000 pertama dimasukkan. Tapis tempoh lebih pendek.', 14, y);
-    y += 6;
-  }
-
+  const t = totals(claims);
+  doc.setFontSize(16);
+  doc.setTextColor(...BLUE);
+  doc.text('Laporan Tuntutan Pekerja', 14, 15);
+  doc.setFontSize(11);
+  doc.setTextColor(...TEXT);
+  doc.text(`Tempoh (tarikh perbelanjaan): ${tempoh}`, 14, 23);
+  doc.text(`Tarikh Janaan: ${formatDate(new Date())}   Disediakan oleh: ${oleh}`, 14, 29);
+  doc.setFontSize(10);
+  doc.text(`Bilangan: ${t.bilangan}  |  Jumlah Kasar: ${RM(t.kasar)}  |  Dibayar: ${RM(t.dibayar)}  |  Baki: ${RM(t.baki)}`, 14, 35);
+  let y = 40;
+  if (penapis.length) { doc.setFontSize(9); doc.text(`Penapis: ${penapis.join(', ')}`, 14, 40); y = 45; }
+  if (terpotong) { doc.setFontSize(9); doc.setTextColor(180, 83, 9); doc.text('Nota: lebih 2,000 tuntutan; hanya 2,000 pertama dimasukkan.', 14, y); doc.setTextColor(...TEXT); y += 5; }
   const byStatus = {};
   const byJenis = {};
   claims.forEach((c) => {
@@ -202,35 +128,44 @@ export async function exportReportPdf({ claims, tempoh, penapis = [], oleh, terp
     (byJenis[c.jenis] ||= { n: 0, rm: 0 }).n++;
     byJenis[c.jenis].rm = round2(byJenis[c.jenis].rm + c.amaun_rm);
   });
-
-  y = sectionTitle(doc, y + 2, 'Ikut status');
-  doc.autoTable({ ...TABLE, startY: y, head: [['Status', 'Bilangan', 'Jumlah']], tableWidth: 110,
-    body: ['Dihantar', 'Lulus', 'Dibayar', 'Ditolak'].filter((s) => byStatus[s]).map((s) => [s + (s === 'Ditolak' ? ' (tidak dikira)' : ''), byStatus[s].n, formatRM(byStatus[s].rm)]),
-    ...rightCols(1, 2) });
-  y = sectionTitle(doc, doc.lastAutoTable.finalY + 10, 'Ikut jenis tuntutan');
-  doc.autoTable({ ...TABLE, startY: y, head: [['Jenis', 'Bilangan', 'Jumlah']], tableWidth: 110,
-    body: Object.entries(byJenis).sort((a, b) => b[1].rm - a[1].rm).map(([j, v]) => [j, v.n, formatRM(v.rm)]),
-    ...rightCols(1, 2) });
-  y = sectionTitle(doc, doc.lastAutoTable.finalY + 10, 'Ringkasan ikut staf');
-  doc.autoTable({ ...TABLE, startY: y,
-    head: [['Nama', 'No. Pekerja', 'Department', 'Bil.', 'Kasar', 'Dibayar', 'Baki']],
-    body: groups.map((g) => [g.staff_name, g.staff_id || '-', g.department || '-', g.bilangan, formatRM(g.kasar), formatRM(g.dibayar), formatRM(g.baki)]),
-    ...rightCols(3, 4, 5, 6) });
-
-  for (const g of groups) { doc.addPage(); staffPage(doc, g, meta); }
-  footer(doc, meta);
-  doc.save(`Laporan_ClaimPro_${stamp()}.pdf`);
+  const right = { 1: { halign: 'right' }, 2: { halign: 'right' } };
+  doc.autoTable({ ...TABLE, startY: y, head: [['Status', 'Bilangan', 'Jumlah']], tableWidth: 110, columnStyles: right,
+    body: ['Dihantar', 'Lulus', 'Dibayar', 'Ditolak'].filter((s) => byStatus[s]).map((s) => [s + (s === 'Ditolak' ? ' (tidak dikira)' : ''), byStatus[s].n, RM(byStatus[s].rm)]) });
+  doc.autoTable({ ...TABLE, startY: doc.lastAutoTable.finalY + 6, head: [['Jenis tuntutan', 'Bilangan', 'Jumlah']], tableWidth: 110, columnStyles: right,
+    body: Object.entries(byJenis).sort((a, b) => b[1].rm - a[1].rm).map(([j, v]) => [j, v.n, RM(v.rm)]) });
+  doc.autoTable({ ...TABLE, startY: doc.lastAutoTable.finalY + 6,
+    head: [['Nama Pekerja', 'No. Pekerja', 'Department', 'Bil.', 'Kasar', 'Dibayar', 'Baki']],
+    columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' } },
+    body: groups.map((g) => [g.staff_name, g.staff_id || '-', g.department || '-', g.bilangan, RM(g.kasar), RM(g.dibayar), RM(g.baki)]) });
+  for (const g of groups) { doc.addPage(); staffPage(doc, g); }
+  doc.save(`Laporan_Terperinci_HR_${stamp()}.pdf`);
 }
 
 /** Satu staf sahaja (sistem lama: exportSingleAdminPDF). */
-export async function exportStaffPdf({ claims, tempoh, oleh }) {
+export async function exportStaffPdf({ claims }) {
   const JsPDF = await loadJsPdf();
-  const doc = new JsPDF({ unit: 'mm', format: 'a4' });
-  const meta = { tempoh, dijana: formatDateTime(new Date()), oleh };
+  const doc = new JsPDF();
   const g = groupByStaff(claims)[0];
   if (!g) throw new Error('Tiada tuntutan untuk staf ini.');
-  staffPage(doc, g, meta);
-  footer(doc, meta);
-  const safe = String(g.staff_name).replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'Staf';
-  doc.save(`Laporan_${safe}_${stamp()}.pdf`);
+  staffPage(doc, g);
+  doc.save(`Laporan_${String(g.staff_name).replace(/\s+/g, '_')}_${stamp()}.pdf`);
+}
+
+/** CSV format sistem lama (exportAdminCSV / exportSingleAdminCSV): satu baris setiap tuntutan + baris JUMLAH KESELURUHAN setiap staf. */
+export function oldFormatCsv(claims, { single = false } = {}) {
+  const q = (v) => {
+    let x = v === null || v === undefined ? '' : String(v);
+    if (/^[=+\-@\t\r]/.test(x)) x = "'" + x;        // elak formula injection dalam Excel
+    return '"' + x.replace(/"/g, '""') + '"';
+  };
+  let out = 'Nama Pekerja,ID Tuntutan,Tarikh,Kategori/Tujuan,Kasar (RM),Dibayar (RM),Baki (RM),Status\n';
+  for (const g of groupByStaff(claims)) {
+    const rows = [...g.tuntutan].sort((a, b) => String(b.tarikh).localeCompare(String(a.tarikh)) || String(b.claim_id).localeCompare(String(a.claim_id)));
+    for (const c of rows) {
+      const a = amounts(c);
+      out += [q(g.staff_name), q(c.claim_id), q(formatDate(c.tarikh)), q(c.keterangan || c.jenis), a.kasar.toFixed(2), a.dibayar.toFixed(2), a.baki.toFixed(2), q(c.status)].join(',') + '\n';
+    }
+    out += [q(g.staff_name), q('JUMLAH KESELURUHAN'), q(''), q(''), q(g.kasar.toFixed(2)), q(g.dibayar.toFixed(2)), q(g.baki.toFixed(2)), q('')].join(',') + '\n' + (single ? '' : '\n');
+  }
+  return out;
 }

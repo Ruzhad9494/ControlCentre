@@ -1,6 +1,6 @@
 /* Voltrack - tambahan kecil atas shared/ui/voltake.css */
 .vt-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
-.vt-stat { display: block; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); color: inherit; text-decoration: none; }
+.vt-stat { display: block; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 18px; padding: 14px 16px; box-shadow: var(--shadow-card); color: inherit; text-decoration: none; }
 a.vt-stat:hover { border-color: var(--solar-blue); }
 .vt-stat .label { font-size: 13px; color: var(--muted); }
 .vt-stat .v { font-size: 22px; line-height: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }

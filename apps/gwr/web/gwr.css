@@ -1,6 +1,6 @@
 /* GWR - tambahan kecil atas shared/ui/voltake.css */
 .gw-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-.gw-stat { display: block; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); color: inherit; text-decoration: none; }
+.gw-stat { display: block; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 18px; padding: 14px 16px; box-shadow: var(--shadow-card); color: inherit; text-decoration: none; }
 .gw-stat:hover { border-color: var(--solar-blue); }
 .gw-stat .label { font-size: 13px; color: var(--muted); }
 .gw-stat .v { font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }

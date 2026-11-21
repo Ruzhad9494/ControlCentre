@@ -116,7 +116,11 @@ test('Hantar (F-30): wajib lengkap; staf dari sesi; PDF draf dijana server; toke
   assert.ok(days > 6.9 && days <= 7.01, String(days));
   const html = pdfText(gas, row.draft_pdf_file_id);
   assert.ok(html.startsWith('%PDF'));
-  for (const s of ['Ground Work Report Form', 'Voltake Energy (PSS)', 'PO-2026-001', 'TNB Solar', '[SHUTDOWN LV]', 'Tukar fius inverter 3', 'Kabel MV perlu ganti', 'Technician | 2 pax | Ali, Abu', 'Menunggu Tandatangan Klien', 'Ali Technician']) assert.ok(html.includes(s), s);
+  // Susun atur sistem lama (#export-container): kepala logo + syarikat (DEPT), grid Project Information, jadual kerja, manpower
+  for (const s of ['GROUND WORK REPORT FORM', 'VOLTAKE ENERGY (PSS)', 'PROJECT INFORMATION', 'PO-2026-001', 'TNB Solar', 'SHUTDOWN LV</span>', 'Tukar fius inverter 3',
+    'UNRESOLVED ISSUE &amp; ACTION TO BE TAKEN', 'Kabel MV perlu ganti', 'MANPOWER / PAX', '<td class="mr">Technician</td><td class="mx">2</td><td>Ali, Abu</td>', 'Total: 2 pax',
+    'Menunggu Tandatangan Klien', 'Ali Technician', 'VERIFICATIONS / PENGESAHAN', 'SITE PHOTOS / LAMPIRAN GAMBAR', 'Page 1 of 3', 'Page 3 of 3', 'All Right Reserved by',
+    ' ; 08:30 AM', 'data:image/png;base64,']) assert.ok(html.includes(s), s);
   assert.equal(gas.drive.files.get(row.draft_pdf_file_id).getName(), `LSS4_Bukit_Kayu_Hitam_TNB_Solar_${today().slice(8, 10)}${today().slice(5, 7)}${today().slice(0, 4)}_Draft.pdf`, 'nama fail ikut sistem lama');
   assert.equal(ok(await call(gas, U.mgr, 'listReports', {})).laporan[0].status, 'Menunggu klien');
 });
@@ -141,7 +145,7 @@ test('Tandatangan klien (F-32): medan terhad, sekali guna, luput = 410, PDF fina
   const row = gas.spreadsheet.getSheetByName('Reports').rows()[0];
   assert.deepEqual([row.status, row.approval_token_hash, row.client_sign_name, row.client_ip_hash], ['Disahkan', '', 'En Rahman', 'ip-klien']);
   const fin = pdfText(gas, row.final_pdf_file_id);
-  assert.ok(fin.includes('DISAHKAN / APPROVED') && fin.includes('En Rahman') && fin.includes('Site Manager'));
+  assert.ok(fin.includes('En Rahman') && fin.includes('Site Manager') && !fin.includes('Menunggu Tandatangan Klien'), 'final: tandatangan & butiran klien');
   assert.deepEqual(gas.mails.map((m) => m.to).sort(), ['ali@gmail.com', 'pss-mgr@example.test', 'rahman@tnb.example']);
   assert.ok(gas.mails.every((m) => m.attachments && m.attachments.length === 1 && /_Final\.pdf$/.test(m.attachments[0].getName())), 'PDF final dilampirkan');
   assert.ok(!gas.mails.some((m) => /drive\.google\.com/.test(m.body)), 'tiada pautan Drive');

@@ -8,7 +8,7 @@ import { el, clear, append } from '/shared/lib/escape.js';
 import { formatRM, formatDate, formatDateTime, todayIso } from '/shared/lib/format.js';
 import { icon, toast, openModal, confirmDialog, busy, badge, emptyState, renderModuleNav } from '/shared/ui/components.js';
 import { prepareFile, MAX_FILES } from '/claimpro/receipt.js';
-import { exportReportPdf, exportStaffPdf, groupByStaff } from '/claimpro/pdf.js';
+import { exportReportPdf, exportStaffPdf, groupByStaff, oldFormatCsv } from '/claimpro/pdf.js';
 
 const MODULE = 'claimpro';
 const main = document.getElementById('main');
@@ -617,6 +617,16 @@ function csvCell(v) {
   return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 
+function saveText(name, text) {
+  const blob = new Blob(['\uFEFF' + text], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = el('a', { href: url, download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function downloadCsv(name, rows) {
   const head = ['ID', 'No. pekerja', 'Nama', 'Department', 'Tarikh', 'Jenis', 'Sesi makan', 'Pax', 'Keterangan', 'Amaun RM', 'Bil. resit', 'Status',
     'Diluluskan oleh', 'Tarikh bayaran syarikat', 'Dibayar syarikat RM', 'Tarikh terima', 'Diterima RM', 'Beza bayaran'];
@@ -652,6 +662,7 @@ async function renderReportMain(host) {
   const status = el('select', { class: 'input' }, [['', 'Semua status'], ['Dihantar', 'Dihantar'], ['Lulus', 'Lulus'], ['Ditolak', 'Ditolak'], ['Dibayar', 'Dibayar']].map(([v, t]) => el('option', { value: v }, t)));
   const go = el('button', { class: 'btn', type: 'button' }, icon('search'), 'Tapis');
   const csv = el('button', { class: 'btn btn-secondary', type: 'button', disabled: true }, icon('download'), 'Eksport CSV');
+  const csvFull = el('button', { class: 'btn btn-ghost', type: 'button', disabled: true }, icon('download'), 'CSV semua lajur');
   const pdf = el('button', { class: 'btn btn-secondary', type: 'button', disabled: true }, icon('download'), 'PDF untuk pengurusan');
   const out = el('div', { class: 'stack' });
   let last = [];
@@ -660,7 +671,7 @@ async function renderReportMain(host) {
   const tempoh = () => (used.dari || used.hingga ? `${used.dari ? formatDate(used.dari) : 'awal'} hingga ${used.hingga ? formatDate(used.hingga) : 'kini'}` : 'Semua tarikh');
   const penapis = () => [used.jenis && `jenis ${used.jenis}`, used.status && `status ${used.status}`].filter(Boolean);
   const staffPdf = (claims, btn) => busy(btn, async () => {
-    try { await exportStaffPdf({ claims, tempoh: tempoh(), oleh: ctx.me?.staff?.nama || 'Admin HR' }); } catch (e) { toast(e.message, 'danger'); }
+    try { await exportStaffPdf({ claims }); } catch (e) { toast(e.message, 'danger'); }
   });
   const run = () => busy(go, async () => {
     try {
@@ -669,6 +680,7 @@ async function renderReportMain(host) {
       last = r.tuntutan;
       lastR = r;
       csv.disabled = !last.length;
+      csvFull.disabled = !last.length;
       pdf.disabled = !last.length;
       const groups = groupByStaff(last);
       clear(out);
@@ -685,13 +697,15 @@ async function renderReportMain(host) {
             el('tbody', null, groups.map((g) => {
               const b = el('button', { class: 'btn btn-secondary btn-sm', type: 'button' }, icon('download'), 'PDF');
               b.addEventListener('click', () => staffPdf(g.tuntutan, b));
+              // sistem lama: exportSingleAdminCSV
+              const bc = el('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => saveText(`Laporan_${String(g.staff_name).replace(/\s+/g, '_')}_${todayIso()}.csv`, oldFormatCsv(g.tuntutan, { single: true })) }, icon('download'), 'CSV');
               return el('tr', null,
                 el('td', { 'data-label': 'Staf' }, `${g.staff_name} (${g.staff_id || '-'}) · ${g.department || '-'}`),
                 el('td', { 'data-label': 'Bil.', class: 'num' }, String(g.bilangan)),
                 el('td', { 'data-label': 'Kasar', class: 'num' }, formatRM(g.kasar)),
                 el('td', { 'data-label': 'Dibayar', class: 'num' }, formatRM(g.dibayar)),
                 el('td', { 'data-label': 'Baki', class: 'num' }, formatRM(g.baki)),
-                el('td', { class: 'actions' }, b));
+                el('td', { class: 'actions' }, el('div', { class: 'row', style: 'gap:4px;flex-wrap:nowrap;justify-content:flex-end' }, b, bc)));
             }))))) : null,
         r.tuntutan.length ? el('h3', { style: 'margin:8px 0 0' }, 'Senarai tuntutan') : null,
         r.tuntutan.length ? el('div', { class: 'table-wrap responsive' }, el('table', { class: 'table' },
@@ -706,12 +720,14 @@ async function renderReportMain(host) {
     } catch (e) { clear(out).append(el('div', { class: 'alert alert-danger' }, e.message)); }
   });
   go.addEventListener('click', run);
-  csv.addEventListener('click', () => downloadCsv(`ClaimPro_${used.dari || 'awal'}_${used.hingga || 'kini'}.csv`, last));
+  // Sistem lama exportAdminCSV: Laporan_Terperinci_HR_<tarikh>.csv
+  csv.addEventListener('click', () => saveText(`Laporan_Terperinci_HR_${todayIso()}.csv`, oldFormatCsv(last)));
+  csvFull.addEventListener('click', () => downloadCsv(`ClaimPro_${used.dari || 'awal'}_${used.hingga || 'kini'}.csv`, last));
   pdf.addEventListener('click', () => busy(pdf, async () => {
     try { await exportReportPdf({ claims: last, tempoh: tempoh(), penapis: penapis(), oleh: ctx.me?.staff?.nama || 'Admin HR', terpotong: lastR?.terpotong }); } catch (e) { toast(e.message, 'danger'); }
   }));
   append(host, el('div', { class: 'cp-grid' }, field('Dari (tarikh perbelanjaan)', dari), field('Hingga', hingga), field('Jenis', jenis), field('Status', status)),
-    el('div', { class: 'row', style: 'margin:12px 0' }, go, pdf, csv), out);
+    el('div', { class: 'row', style: 'margin:12px 0' }, go, pdf, csv, csvFull), out);
   await run();
 }
 

@@ -3,14 +3,15 @@
 // - navigasi halaman: network dahulu, fallback cache, kemudian /offline.html
 // - fail statik: cache dahulu, kemas kini di belakang (stale-while-revalidate)
 // Naikkan VERSION setiap kali senarai SHELL berubah.
-const VERSION = 'vp-shell-2026-11-21-1';
+const VERSION = 'vp-shell-2026-11-21-2';
 // GWR (/gwr/...) dalam SHELL: digunakan di site tanpa line (F-31), app + barisan offline mesti ada dalam cache.
 const SHELL = [
   '/', '/login/', '/no-access/', '/about/', '/install/', '/admin/', '/offline.html',
-  '/manifest.webmanifest', '/icons/icon-192.png', '/icons/favicon-32.png',
+  '/manifest.webmanifest', '/icons/icon-192.png', '/icons/favicon-32.png', '/icons/logo-mark.png',
   '/shared/ui/voltake.css', '/shared/ui/components.js', '/shared/ui/icons.svg',
-  '/shared/ui/fonts/inter-latin-400-normal.woff2', '/shared/ui/fonts/inter-latin-500-normal.woff2',
-  '/shared/ui/fonts/inter-latin-600-normal.woff2', '/shared/ui/fonts/inter-latin-700-normal.woff2',
+  '/shared/ui/fonts/manrope-latin-400-normal.woff2', '/shared/ui/fonts/manrope-latin-500-normal.woff2',
+  '/shared/ui/fonts/manrope-latin-600-normal.woff2', '/shared/ui/fonts/manrope-latin-700-normal.woff2',
+  '/shared/ui/fonts/manrope-latin-800-normal.woff2',
   '/shared/lib/api.js', '/shared/lib/escape.js', '/shared/lib/format.js', '/shared/lib/privacy.js', '/shared/lib/page.js',
   '/assets/dashboard.js', '/assets/login.js', '/assets/no-access.js', '/assets/about.js', '/assets/install.js',
   '/assets/admin.js', '/assets/offline.js',

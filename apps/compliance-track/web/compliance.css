@@ -1,6 +1,6 @@
 /* Compliance Track - tambahan kecil atas shared/ui/voltake.css */
 .ct-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-.ct-stat { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); }
+.ct-stat { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 18px; padding: 14px 16px; box-shadow: var(--shadow-card); }
 .ct-stat .label { font-size: 13px; color: var(--muted); }
 .ct-stat .v { font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ct-stat.warn { border-left-color: var(--warning); }
@@ -62,30 +62,43 @@ a.ct-stat:hover, button.ct-stat:hover { border-color: var(--solar-blue); }
 .ct-warn li.error { color: var(--danger); }
 .ct-warn li.warn { color: #92400E; }
 
-/* ---------------- Senarai Kerja: pratonton + cetak A4 (sistem lama: senarai/index.html) */
-.sk-preview { background: #E5E7EB; padding: var(--sp-4); border-radius: var(--radius-card); overflow-x: auto; }
-.sk-pg { background: #fff; color: #000; width: 210mm; min-height: 297mm; margin: 0 auto var(--sp-4); padding: 12mm; box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; font-size: 10pt; }
-.sk-hdr { width: 100%; border-collapse: collapse; margin-bottom: 6mm; }
-.sk-hdr td { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; }
-.sk-hdr .brand { width: 26%; text-align: center; font-weight: 800; font-size: 13pt; letter-spacing: .5px; }
-.sk-hdr .lbl { width: 16%; font-weight: 700; background: #F3F4F6; }
-.sk-title { text-align: center; font-weight: 800; font-size: 12pt; margin: 4mm 0 5mm; text-decoration: underline; }
-.sk-tbl { width: 100%; border-collapse: collapse; }
-.sk-tbl th, .sk-tbl td { border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9pt; }
-.sk-tbl th { background: #F3F4F6; }
+/* ---------------- Senarai Kerja: tiru senarai/index.html sistem lama (.pg, .hdr, .tbl, .ptitle, .pbox, print-frame) */
+.sk-preview { background: #94A3B8; padding: var(--sp-4); border-radius: var(--radius-card); overflow-x: auto; }
+.sk-pg { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #000; background: #fff; width: 210mm; max-width: none; min-height: 297mm; margin: 0 auto 14px; padding: 12mm; box-shadow: 0 2px 12px rgba(0,0,0,.25); box-sizing: border-box; }
+.sk-pg table { border-collapse: collapse; width: 100%; }
+.sk-pg td, .sk-pg th { border: 1px solid #000; padding: 5px 6px; vertical-align: middle; color: #000; }
+.sk-pg th { font-weight: 700; text-align: center; }
+.sk-hdr td { font-size: 10px; text-align: center; }
+.sk-hdr td.logo { width: 26%; }
+.sk-hdr td.logo img { display: block; margin: 0 auto; max-width: 100%; max-height: 17mm; width: auto; height: auto; }
+.sk-hdr td.lbl { width: 20%; }
+.sk-hdr td.co { font-size: 13px; font-weight: 700; }
+.sk-hdr td.dt { font-weight: 700; }
+.sk-title { text-align: center; font-weight: 700; font-size: 14px; text-decoration: underline; margin: 16px 0 12px; }
+.sk-tbl td { text-align: center; }
 .sk-tbl td.l { text-align: left; }
-.sk-ptitle { font-weight: 800; font-size: 11pt; margin: 2mm 0 3mm; }
-.sk-box { border: 1px solid #000; margin-bottom: 4mm; break-inside: avoid; }
-.sk-box .lbl { font-weight: 700; padding: 3px 6px; border-bottom: 1px solid #000; background: #F3F4F6; }
-.sk-box .slot { display: flex; align-items: center; justify-content: center; min-height: 40mm; padding: 3mm; }
-.sk-box .slot img, .sk-box .slot canvas { max-width: 100%; max-height: 95mm; object-fit: contain; }
-.sk-box .slot.missing { color: #B91C1C; font-weight: 700; }
+.sk-ptitle { border: 1px solid #000; margin-top: -1px; text-align: center; padding: 8px; font-size: 13px; }
+.sk-box { border: 1px solid #000; margin-top: -1px; padding: 8px; text-align: center; page-break-inside: avoid; break-inside: avoid; }
+.sk-box .lbl { font-size: 9px; color: #444; text-align: left; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .4px; }
+/* Bingkai lalai sistem lama: 181mm x 64mm, gambar dimuat penuh (contain) di tengah */
+.sk-box .slot { height: 64mm; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; }
+.sk-box .slot img, .sk-box .slot canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+.sk-box .slot.missing { height: auto; min-height: 20mm; }
+.sk-box .miss { padding: 22px 8px; color: #B91C1C; font-weight: 700; text-align: center; }
+.print-frame { width: 100%; border-collapse: collapse; }
+.print-frame > thead, .print-frame > tfoot { display: none; }
+.print-frame > tbody > tr > td, .print-frame > thead > tr > td, .print-frame > tfoot > tr > td { padding: 0; border: 0; }
+.fr-foot { font-family: Arial, Helvetica, sans-serif; font-size: 9px; color: #555; text-align: center; }
 @media print {
   @page { size: A4; margin: 0; }
   html, body { background: #fff !important; }
   body * { visibility: hidden !important; }
   #sk-print, #sk-print * { visibility: visible !important; }
-  #sk-print { position: absolute; left: 0; top: 0; width: 210mm; padding: 0; background: #fff; }
-  .sk-pg { margin: 0; page-break-after: always; break-after: page; box-shadow: none; }
+  #sk-print { position: absolute; left: 0; top: 0; width: 210mm; background: #fff; }
+  .print-frame > thead { display: table-header-group; }
+  .print-frame > tfoot { display: table-footer-group; }
+  .fr-top { height: 11mm; }
+  .fr-foot { height: 15mm; box-sizing: border-box; padding-top: 5mm; }
+  .sk-pg { box-shadow: none; margin: 0; padding: 0 12mm; width: auto; min-height: 0; page-break-after: always; break-after: page; }
   .sk-pg:last-child { page-break-after: auto; break-after: auto; }
 }

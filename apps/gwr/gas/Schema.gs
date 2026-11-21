@@ -54,7 +54,8 @@ var SETTINGS_SEED = [
   ['company_reg', '201801008831 (1270845-X)', 'No. pendaftaran syarikat pada kepala PDF'],
   ['company_phone', '+604-5823617', 'Telefon pada kepala PDF'],
   ['company_email', 'admin@voltake.com', 'Emel pada kepala PDF'],
-  ['company_web', 'www.voltake.com', 'Laman web pada kepala PDF']
+  ['company_web', 'www.voltake.com', 'Laman web pada kepala PDF'],
+  ['report_logo_file_id', '', 'Pilihan: ID fail logo report dalam Drive. Kosong = logo dari portal (shared/ui/report-logo.png), atau logo lalai']
 ];
 
 var VALIDATIONS = [

@@ -145,6 +145,10 @@ async function renderCalculator(estimateId) {
   segLand.addEventListener('click', () => setMode('landscape'));
 
   let current = null;
+  // Gambar ringkasan guna font Inter (bukan font tema): muat dahulu supaya kanvas tidak lukis dengan font ganti
+  if (document.fonts && document.fonts.load) {
+    Promise.all(['400', '600', '700'].map((w) => document.fonts.load(`${w} 13px Inter`))).then(() => { if (current) update(); }).catch(() => {});
+  }
   function update() {
     const input = readInput();
     const hasil = calcEstimate(input, useRates);

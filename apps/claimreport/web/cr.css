@@ -1,6 +1,6 @@
 /* ClaimReport / DO Generator - tambahan kecil atas shared/ui/voltake.css */
 .cr-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-.cr-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); }
+.cr-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; box-shadow: var(--shadow-card); }
 .cr-stat .label { font-size: 13px; color: var(--muted); }
 .cr-stat .v { font-size: 22px; line-height: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .cr-filters { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: end; }

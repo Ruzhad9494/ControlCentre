@@ -3,11 +3,18 @@ import { getMe, takeNext } from '/shared/lib/api.js';
 import { el, clear, append } from '/shared/lib/escape.js';
 import { icon, renderHeader, registerSW } from '/shared/ui/components.js';
 
-// Warna latar ikon (DBD 3)
+// Warna latar ikon (tema 21/11/2026: biru, navy, oren logo, hijau)
 const COLORS = {
-  hr: '#1D6FD8', costcalc: '#15803D', gwr: '#1D4ED8', ams: '#15803D', claimpro: '#1D6FD8',
-  compliance: '#B45309', claimreport: '#1D4ED8', voltrack: '#0F766E', info: '#1D6FD8', admin: '#0B2545',
+  hr: 'linear-gradient(135deg,#0B4FE6,#0A2C82)', costcalc: 'linear-gradient(135deg,#FFA516,#FF7A00)', gwr: 'linear-gradient(135deg,#0B1734,#1A2A55)',
+  ams: 'linear-gradient(135deg,#00A35A,#00732A)', claimpro: 'linear-gradient(135deg,#0B4FE6,#0A2C82)', compliance: 'linear-gradient(135deg,#FFA516,#E06A00)',
+  claimreport: 'linear-gradient(135deg,#3A7BFF,#0B4FE6)', voltrack: 'linear-gradient(135deg,#0F9C8F,#0F766E)', info: 'linear-gradient(135deg,#5B6B85,#3B4A63)',
+  admin: 'linear-gradient(135deg,#0B1734,#1A2A55)',
 };
+/** Ucapan ikut masa Malaysia. */
+function greeting() {
+  const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kuala_Lumpur', hour: '2-digit', hour12: false }).format(new Date())) % 24;
+  return h < 12 ? 'Selamat pagi' : h < 14 ? 'Selamat tengah hari' : h < 19 ? 'Selamat petang' : 'Selamat malam';
+}
 const STATUS_TAG = { belum_live: 'Akan datang', maintenance: 'Penyelenggaraan' };
 const DISMISS_KEY = 'vp_install_dismissed';
 
@@ -69,8 +76,9 @@ async function main() {
 
   append(clear(main),
     el('section', { class: 'banner', 'aria-labelledby': 'welcome' },
-      el('h1', { id: 'welcome' }, 'Welcome to Voltake Operations Portal'),
-      el('p', null, 'Your central hub for all systems')),
+      el('span', { class: 'accent', 'aria-hidden': 'true' }),
+      el('h1', { id: 'welcome' }, `${greeting()}, ${String(me.staff.nama || '').split(' ')[0]}`),
+      el('p', null, 'Welcome to Voltake Operations Portal. Pilih sistem di bawah untuk mula.')),
     installBanner(),
     me.modules.length === 0
       ? el('div', { class: 'alert alert-info' }, 'Akaun anda belum diberi akses ke mana-mana modul. Hubungi Admin jika ini satu kesilapan.')

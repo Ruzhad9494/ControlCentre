@@ -132,16 +132,18 @@ export function renderHeader(me, crumb = 'Dashboard') {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
 
   const header = el('header', { class: 'vp-header' },
-    el('div', { class: 'container bar' },
-      el('a', { class: 'vp-brand', href: '/', 'aria-label': 'Voltake - Dashboard' }, 'VOLTAKE', el('span', { class: 'sub' }, 'ENERGY')),
+    el('div', { class: 'bar' },
+      el('a', { class: 'vp-brand', href: '/', 'aria-label': 'Voltake - Dashboard' },
+        el('img', { src: '/icons/logo-mark.png', alt: '', width: '38', height: '38' }), 'Voltake'),
       el('span', { class: 'vp-crumb' }, '/ ' + crumb),
+      el('div', { class: 'vp-nav-slot' }),
       el('div', { class: 'vp-profile' }, toggle, menu)));
   document.body.prepend(header);
   return header;
 }
 
 /**
- * Navigasi dalam modul: tab di desktop, bottom nav di telefon (maks 4 item, DBD 6).
+ * Navigasi dalam modul: pil di tengah kepala (desktop), bar terapung di bawah (telefon). Maks 5 item.
  * items: [{ href: '#/senarai', label: 'Simpanan', ikon: 'scroll-text', match: (hash) => bool }]
  */
 export function renderModuleNav(host, items) {
@@ -157,7 +159,8 @@ export function renderModuleNav(host, items) {
   };
   window.addEventListener('hashchange', draw);
   draw();
-  host.prepend(nav);
+  const slot = document.querySelector('.vp-header .vp-nav-slot');
+  if (slot) { slot.append(nav); slot.closest('.vp-header').classList.add('has-nav'); } else host.prepend(nav);
   return nav;
 }
 

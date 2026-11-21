@@ -256,6 +256,10 @@ function anonymiseModal(a) {
 }
 
 // ------------------------------------------------------------------ cetak borang (sistem lama: pratonton A4 "Borang Permohonan Jawatan")
+// Susun atur DITIRU dari #pdf-content sistem lama (3 muka A4, html2pdf): logo + tajuk + jawatan & gambar pasport,
+// A. Maklumat Peribadi, B. Akademik / C. Pengalaman Kerja, D. Kecemasan, E. Rujukan, F. Lain-lain, G. Perakuan &
+// Persetujuan, tarikh + tandatangan, notis kerahsiaan, "Muka Surat N / 3". No. SOCSO & KWSP dibuang (PRD Q-09).
+const REPORT_LOGO = '/shared/ui/report-logo.png';
 async function printForm(a) {
   const area = el('section', { class: 'stack' });
   view.append(area);
@@ -263,32 +267,72 @@ async function printForm(a) {
   let photo = null, sign = null;
   try { if (a.ada_gambar) photo = (await fetchBlobUrl({ app_no: a.app_no, jenis: 'gambar' })).url; } catch { /* tiada */ }
   try { if (a.ada_tandatangan) sign = (await fetchBlobUrl({ app_no: a.app_no, jenis: 'tandatangan' })).url; } catch { /* tiada */ }
-  const row = (k, v) => el('tr', null, el('td', { class: 'lbl' }, k), el('td', null, v || '-'));
-  const tbl = (list, cols) => el('table', null, el('tr', null, cols.map(([, l]) => el('th', null, l))), (list.length ? list : [{}]).map((r) => el('tr', null, cols.map(([k]) => el('td', null, r[k] || '-')))));
+  const L = (t, attrs = {}) => el('td', { class: 'lb', ...attrs }, t);
+  const V = (t, attrs = {}) => el('td', attrs, t || '');
+  const list = (rows, cols) => el('table', { class: 'a4t' },
+    el('thead', null, el('tr', null, cols.map(([, h, w, al]) => el('th', { style: `width:${w};text-align:${al || 'left'}` }, h)))),
+    el('tbody', null, rows.length ? rows.map((r) => el('tr', null, cols.map(([k, , , al]) => el('td', { style: `text-align:${al || 'left'}` }, r[k] || ''))))
+      : el('tr', null, el('td', { colspan: '4', class: 'empty-row' }, 'Tiada maklumat'))));
+  const foot = (n) => el('div', { class: 'pgno' }, `Muka Surat ${n} / 3`);
+  const box = (on) => el('span', { class: 'cb' }, on ? '\u2713' : '');
+  const refs = [a.ref1 || {}, a.ref2 || {}];
+  const jenayah = String(a.pernah_disabit || '').toLowerCase() === 'ya';
   const pg = el('div', { id: 'bf-print' },
     el('section', { class: 'bf-pg' },
-      el('div', { class: 'top' }, el('div', null, el('strong', null, 'VOLTAKE ENERGY SERVICES'), el('div', null, `No. rujukan: ${a.app_no}`), el('div', null, `Tarikh mohon: ${formatDate(a.tarikh_mohon)}`)),
-        photo ? el('img', { class: 'ph', src: photo, alt: '' }) : el('div', { class: 'ph' })),
-      el('h1', null, 'BORANG PERMOHONAN JAWATAN'),
-      el('h2', null, 'Maklumat asas'),
-      el('table', null, row('Jawatan dipohon', a.jawatan), row('Department', a.department), row('Nama penuh', a.nama), row('No. kad pengenalan', fmtIc(a.ic)), row('Tarikh lahir', a.dob ? formatDate(a.dob) : ''),
-        row('Jantina', a.jantina), row('Taraf perkahwinan', a.status_kahwin), row('Emel', a.email), row('No. telefon', [a.tel_bimbit, a.tel_rumah].filter(Boolean).join(' / ')), row('Alamat', a.alamat)),
-      el('h2', null, 'Maklumat akademik'), tbl(a.akademik, [['dari', 'Dari'], ['hingga', 'Hingga'], ['institusi', 'Sekolah / pusat pengajian'], ['kelulusan', 'Kelulusan']]),
-      el('h2', null, 'Pengalaman kerja'), tbl(a.pengalaman, [['dari', 'Dari'], ['hingga', 'Hingga'], ['majikan', 'Majikan'], ['jawatan', 'Jawatan']])),
+      el('div', { class: 'head' }, el('img', { src: REPORT_LOGO, alt: 'Logo' }), el('h1', null, 'Borang Permohonan Jawatan'),
+        el('p', null, 'Sila pastikan maklumat diisi dengan lengkap dan tepat.')),
+      el('div', { class: 'top' },
+        el('table', { class: 'job' }, el('tr', null, el('td', { class: 'k' }, 'Jawatan Dipohon'), el('td', { class: 'c' }, ':'), el('td', { class: 'v' }, a.jawatan || ''))),
+        el('div', { class: 'ph' }, photo ? el('img', { src: photo, alt: '' }) : el('span', null, 'Gambar Ukuran Pasport'))),
+      el('h2', null, 'A. Maklumat Peribadi'),
+      el('table', { class: 'a4t' },
+        el('tr', null, L('Nama Penuh', { style: 'width:33%' }), V(a.nama, { colspan: '3', class: 'up' })),
+        el('tr', null, L('No. Kad Pengenalan'), V(fmtIc(a.ic)), L('Tarikh Lahir', { style: 'width:25%' }), V(a.dob ? formatDate(a.dob) : '')),
+        el('tr', null, L('Jantina'), V(a.jantina), L('Taraf Perkahwinan'), V(a.status_kahwin)),
+        el('tr', null, L('Alamat Semasa'), V(a.alamat, { colspan: '3', class: 'up pre' })),
+        el('tr', null, L('No. Telefon Bimbit'), V(a.tel_bimbit), L('No. Telefon Rumah'), V(a.tel_rumah)),
+        el('tr', null, L('Alamat Emel'), V(a.email, { colspan: '3' }))),
+      el('h2', null, 'B. Maklumat Akademik'),
+      list(a.akademik || [], [['dari', 'Tahun Dari', '15%', 'center'], ['hingga', 'Tahun Hingga', '15%', 'center'], ['institusi', 'Sekolah / Pusat Pengajian', '40%'], ['kelulusan', 'Kelulusan', '30%']]),
+      foot(1)),
     el('section', { class: 'bf-pg' },
-      el('h2', null, 'Hubungan kecemasan'),
-      el('table', null, row('Nama penama', a.kecemasan_nama), row('Hubungan', a.kecemasan_hubungan), row('No. telefon', `${a.kecemasan_tel} (${a.kecemasan_jenis_tel})`)),
-      el('h2', null, 'Lain-lain maklumat'),
-      el('table', null, row('Rekod jenayah / siasatan / sabitan', a.pernah_disabit + (a.disabit_penerangan ? ': ' + a.disabit_penerangan : '')), row('Gaji dipohon', a.gaji_dijangka !== null ? formatRM(a.gaji_dijangka) : '')),
-      el('h2', null, 'Rujukan'),
-      tbl([a.ref1, a.ref2].filter((r) => r.nama), [['nama', 'Nama'], ['jawatan', 'Jawatan'], ['syarikat', 'Organisasi'], ['tel', 'Telefon']]),
-      el('h2', null, 'Persetujuan & tandatangan'),
-      el('table', null, row('Kebenaran semakan latar belakang', a.kebenaran_semak), row('Persetujuan notis privasi', a.consent_at ? `${formatDateTime(a.consent_at)} (${a.consent_version})` : a.consent_version)),
-      el('p', { style: 'margin-top:6mm' }, 'Tandatangan pemohon:'), sign ? el('img', { class: 'sig', src: sign, alt: '' }) : el('p', null, '-')));
+      el('h2', { class: 'first' }, 'C. Pengalaman Kerja'),
+      list(a.pengalaman || [], [['dari', 'Tahun Dari', '15%', 'center'], ['hingga', 'Tahun Hingga', '15%', 'center'], ['majikan', 'Majikan', '40%'], ['jawatan', 'Jawatan', '30%']]),
+      el('h2', null, 'D. Maklumat Kecemasan'),
+      el('table', { class: 'a4t' },
+        el('tr', null, el('td', { colspan: '4', class: 'lb hd' }, 'Hubungan Kecemasan')),
+        el('tr', null, L('Penama', { style: 'width:25%' }), V(a.kecemasan_nama, { colspan: '3' })),
+        el('tr', null, L('Hubungan'), V(a.kecemasan_hubungan), L(`No Telefon (${a.kecemasan_jenis_tel || '-'})`, { style: 'width:25%' }), V(a.kecemasan_tel))),
+      el('h2', null, 'E. Rujukan (References)'),
+      el('table', { class: 'a4t' },
+        el('thead', null, el('tr', null, [['Bil', '8%', 'center'], ['Nama', '25%'], ['Jawatan', '25%'], ['Syarikat/Organisasi', '25%'], ['No Telefon', '17%']].map(([h, w, al]) => el('th', { style: `width:${w};text-align:${al || 'left'}` }, h)))),
+        el('tbody', null, refs.map((r, i) => el('tr', null, el('td', { style: 'text-align:center' }, String(i + 1)), V(r.nama), V(r.jawatan), V(r.syarikat), V(r.tel))))),
+      foot(2)),
+    el('section', { class: 'bf-pg' },
+      el('h2', { class: 'first' }, 'F. Lain-lain Maklumat'),
+      el('table', { class: 'a4t' },
+        el('tr', null, el('td', { style: 'width:75%;font-weight:600' }, 'Adakah anda pernah mempunyai rekod jenayah, sedang dalam siasatan, atau pernah disabitkan atas mana-mana kesalahan di bawah undang-undang?'),
+          el('td', { style: 'width:25%;text-align:center;font-weight:700' }, a.pernah_disabit ? String(a.pernah_disabit).toUpperCase() : '')),
+        jenayah ? el('tr', null, el('td', { colspan: '2', class: 'why' }, el('strong', null, 'Alasan / Butiran: '), a.disabit_penerangan || '')) : null),
+      el('table', { class: 'a4t half' },
+        el('tr', null, L('Gaji Dipohon', { style: 'width:50%' }), el('td', { class: 'gaji' }, 'RM ' + (a.gaji_dijangka !== null && a.gaji_dijangka !== undefined ? Number(a.gaji_dijangka).toFixed(2) : '0.00')))),
+      el('h2', null, 'G. Perakuan & Persetujuan'),
+      el('div', { class: 'consent' },
+        el('p', { class: 'b' }, 'Persetujuan Semakan Latar Belakang:'),
+        el('div', { class: 'yn' }, box(a.kebenaran_semak === 'Ya'), ' YA', box(a.kebenaran_semak === 'Tidak'), ' TIDAK'),
+        el('p', null, 'Saya bersetuju untuk pihak organisasi menjalankan semakan latar belakang sekiranya diperlukan. Dengan persetujuan ini, saya membenarkan pihak organisasi mendapatkan, menyemak dan mengesahkan maklumat berkaitan latar belakang saya daripada pihak berkaitan tertakluk kepada undang-undang dan kerahsiaan yang berkuat kuasa.')),
+      el('p', { class: 'decl' }, 'Saya dengan ini mengaku bahawa segala maklumat yang diberikan dalam borang permohonan ini adalah benar dan tepat. Saya memahami bahawa sebarang maklumat palsu boleh menyebabkan permohonan saya ditolak atau perkhidmatan saya ditamatkan serta-merta sekiranya saya telah ditawarkan pekerjaan.'),
+      el('div', { class: 'signrow' },
+        el('div', null, el('p', { class: 'k' }, 'Tarikh Permohonan:'), el('p', { class: 'date' }, a.tarikh_mohon ? formatDate(a.tarikh_mohon) : '')),
+        el('div', { class: 'sig' }, el('div', { class: 'line' }, sign ? el('img', { src: sign, alt: '' }) : null), el('p', null, 'Tandatangan Pemohon'))),
+      el('div', { class: 'secret' }, 'Maklumat yang diperoleh akan dirahsiakan dan hanya digunakan untuk tujuan penilaian permohonan sahaja.'),
+      el('div', { class: 'meta' }, `No. rujukan ${a.app_no}`, a.consent_at ? ` · Persetujuan notis privasi ${formatDateTime(a.consent_at)} (${a.consent_version})` : ''),
+      foot(3)));
   clear(area).append(
     el('div', { class: 'row-between' }, el('h3', { style: 'margin:0' }, 'Borang permohonan'),
       el('div', { class: 'row' }, el('button', { class: 'btn', type: 'button', onclick: () => window.print() }, icon('printer'), 'Cetak / simpan PDF'),
         el('button', { class: 'btn btn-ghost', type: 'button', onclick: () => area.remove() }, icon('x'), 'Tutup'))),
+    el('p', { class: 'caption', style: 'margin:0' }, 'Dalam dialog cetak pilih "Save as PDF", saiz A4, margin "None" (sama dengan PDF borang sistem lama).'),
     el('div', { class: 'bf-preview' }, pg));
   area.scrollIntoView({ block: 'start' });
 }

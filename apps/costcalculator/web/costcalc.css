@@ -1,4 +1,8 @@
 /* Cost Calculator - tambahan kecil atas shared/ui/voltake.css */
+/* Font gambar ringkasan (image.js): Inter, sama seperti sebelum tema Manrope, supaya gambar kekal sama */
+@font-face { font-family: Inter; font-style: normal; font-weight: 400; font-display: swap; src: url(/shared/ui/fonts/inter-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 600; font-display: swap; src: url(/shared/ui/fonts/inter-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 700; font-display: swap; src: url(/shared/ui/fonts/inter-latin-700-normal.woff2) format("woff2"); }
 .cc-layout { display: grid; gap: var(--sp-5); grid-template-columns: minmax(0, 1fr); align-items: start; }
 .cc-layout > *, .cc-grid > * { min-width: 0; }
 @media (min-width: 1024px) { .cc-layout { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); } .cc-preview { position: sticky; top: calc(var(--header-h) + 16px); } }

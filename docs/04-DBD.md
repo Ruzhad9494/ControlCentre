@@ -1,5 +1,29 @@
 # DBD: Voltake Operations Portal
-Tarikh: 19/11/2026 | Versi: 1.3 (draf, dikemas kini 19/11/2026) | Rujuk: 03-AFD, mockup "Integrated Operations Management System"
+Tarikh: 19/11/2026 | Versi: 2.0 (tema baharu 21/11/2026) | Rujuk: 03-AFD, gambar tema rujukan pemilik (gaya "EduNexus IQMS"), logo V Voltake
+
+## 0. Tema 2.0 (21/11/2026, arahan pemilik): MENGATASI seksyen 2, 3, 4, 6 dan 7 di bawah jika bercanggah
+
+Sumber: 4 gambar rujukan tema (log masuk gelap dengan garis cahaya + kad kaca; dashboard kad putih bucu besar,
+kepala terapung dengan navigasi pil di tengah, kad hero navy, tab pil) dan logo V Voltake (oren / hitam). Semua
+dalam `shared/ui/voltake.css` (satu fail untuk semua modul, nama kelas lama dikekalkan).
+
+| Perkara | Nilai |
+|---|---|
+| Logo utama | V Voltake (oren + hitam, garis perak). Ikon PWA 192 / 512 / maskable 512 (latar putih, zon selamat), apple-touch 180 (latar putih), favicon 16 / 32 / `.ico`, `icons/logo-mark.png` 256 untuk kepala & log masuk. Dijana dari fail asal pemilik |
+| Logo report | BERASINGAN dari logo utama: `shared/ui/report-logo.png` (lalai = logo "Voltake Energy Services" dari sistem lama). PDF GWR (server) guna Settings `report_logo_file_id`, atau fail portal itu, atau salinan terbenam |
+| Font | **Manrope** 400-800 (OFL), dihos sendiri. Tajuk 700 dengan jarak huruf sedikit rapat; badan 500. Gambar ringkasan Cost Calculator kekal Inter supaya sama seperti sebelum |
+| Latar halaman | `#E6F0FE` (biru pucat); permukaan kad `#FFFFFF`; latar lembut (kumpulan pil, kepala jadual) `#EFF5FC`; garisan `#DCE6F3` |
+| Teks | Tajuk navy `#0B1734`; badan `#0F1B33`; kelabu `#5B6B85` |
+| Utama | Biru `#0B4FE6` (hover `#0A3FBE`): butang utama, pautan, avatar. Navy `#0B1734`: pil / tab aktif |
+| Brand | Oren logo `#FF9500`: garis aksen pada hero & log masuk |
+| Status | Berjaya `#00732A` / `#E8FFF3`; amaran (coklat) `#8C4D00` / `#FFF4E2`; bahaya `#DC0000` / `#FFEFF0`; info `#0B4FE6` / `#E8F0FF`. Badge = pil lembut |
+| Hero | Gradien navy `#0A2C82` ke `#001855`, item dalam hero lut sinar dengan garis putih 12% |
+| Bentuk | Kad radius 24px, kawalan 12px, pil 999px, bayang lembut biru-kelabu |
+| Kepala | Kad putih terapung (radius 22px, tinggi 64px): logo V + "Voltake" + nama modul (kiri), navigasi modul pil di tengah (aktif navy), avatar biru + "Hi, Nama" (kanan) |
+| Navigasi modul (telefon <= 899px) | Bar pil terapung di bawah, item aktif navy, sasaran sentuh >= 44px |
+| Tab dalam skrin | Kumpulan pil putih berbingkai; tab aktif navy, teks putih |
+| Log masuk | Latar hitam `#030306` dengan garis cahaya menegak biru / oren / putih dan lantai perspektif; teks besar di kiri; kad kaca (blur 18px, border putih 20%) dengan logo, butang Google, notis privasi |
+| Report (PDF / cetak) | TIDAK ikut tema: kekal format sistem lama setiap modul (lihat `docs/rujukan-sistem-lama.md`) |
 
 ## 1. Overview
 

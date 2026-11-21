@@ -267,3 +267,19 @@ Sumber: `Ruzhad9494/Voltrack` (VoltTrack v2: `Appscript/Code.gs`, `index.html`),
 | Padam projek: tiada | Admin sahaja, padam lembut dengan sebab | Jejak audit |
 | Tiada rekod siapa ubah fasa | Nama & masa kemas kini setiap fasa + AuditLog | Akauntabiliti |
 | - | `paid_date` (tarikh Paid), `gwr_report_ids` (ID report GWR, F-85) | Laporan & pautan silang |
+
+## Semakan report vs sistem lama (21/11/2026)
+
+Arahan pemilik: report yang dimuat turun (PDF / Excel / CSV / cetak) mesti sama dengan sistem lama. Logo report = logo
+"Voltake Energy Services" lama (`shared/ui/report-logo.png`, boleh diganti), BUKAN logo V aplikasi.
+
+| Modul | Report | Status |
+|---|---|---|
+| GWR | PDF draf & final | Ditulis semula ikut `#export-container` lama: kepala logo + syarikat (DEPT pada muka 1), grid Project Information 2 lajur, jadual Job Description / Remark + lencana SHUTDOWN, Unresolved Issue, Manpower (Position / Pax / Name + Total), Verifications (kotak kuning "Menunggu Tandatangan Klien"), Site Photos 2 x 3 bernombor, "© tahun All Right Reserved by Voltake", "Page X of N", masa `D/M/YYYY ; HH:MM AM`. Beza: kaki halaman ikut selepas kandungan (bukan dipin di bawah) supaya penukar PDF Google tidak cipta muka kosong; tarikh DD/MM/YYYY (lama YYYY-MM-DD) |
+| Mohon Kerja | Borang A4 (cetak / simpan PDF) | Ditulis semula ikut `#pdf-content` lama: 3 muka, logo tengah, "Borang Permohonan Jawatan", jawatan + gambar pasport, A. Maklumat Peribadi, B. Akademik, C. Pengalaman, D. Kecemasan, E. Rujukan, F. Lain-lain (rekod jenayah, gaji), G. Perakuan & Persetujuan (kotak YA / TIDAK), tarikh + tandatangan, notis kerahsiaan, "Muka Surat N / 3". SOCSO / KWSP dibuang (Q-09) |
+| Compliance | Senarai Kerja | Ikut `senarai/index.html` lama: kepala jadual dengan logo (26%), Company Name / Address / Date, tajuk bergaris bawah, jadual (NO., NAME, DESIGNATION, CIDB EXPIRED DATE format MM/YYYY, IC NO., CERT NO), muka setiap staf dengan kotak tajuk & kotak lampiran label kecil, bingkai 64mm, kaki "Copyright by Voltake" berulang setiap halaman. Beza: alat laras gambar (potong / zum / seret / tinggi bingkai) tidak dibawa; gambar dimuat penuh di tengah (= lalai lama) |
+| ClaimPro | PDF laporan & PDF satu staf, CSV | Ikut `exportAdminPDF` / `exportSingleAdminPDF` / `exportAdminCSV` lama: tajuk biru, Nama Pekerja, Tarikh Janaan, baris Jumlah Kasar / Dibayar / Baki, jadual striped kepala biru, nama fail `Laporan_Terperinci_HR_<tarikh>`. Tambahan (diminta 20/11/2026): muka ringkasan di depan. CSV semua lajur kekal sebagai butang kedua |
+| AMS | CSV senarai aset | Lajur & nama fail sama dengan `downloadCSV` lama (No., Kategori, Jenama (Make), ..., Catatan (Remark); `Senarai_Aset_YYYYMMDD.csv`) |
+| Cost Calculator | Gambar ringkasan | Sudah sama (Estimation Cost, Mobilisation Costing, Costing Detail, Project Summary, SST); font gambar dikunci Inter |
+| ClaimReport | PDF + Excel DO, senarai PDF, Zip | DO dari tab Template yang sama; senarai PDF warna kepala lama (biru langit); Zip "GCC Month Year" |
+| Voltrack | - | Sistem lama tiada report |

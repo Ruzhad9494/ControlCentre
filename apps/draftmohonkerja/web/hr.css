@@ -1,6 +1,6 @@
 /* Mohon Kerja - tambahan kecil atas shared/ui/voltake.css */
 .hr-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-.hr-stat { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); }
+.hr-stat { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 18px; padding: 14px 16px; box-shadow: var(--shadow-card); }
 .hr-stat .label { font-size: 13px; color: var(--muted); }
 .hr-stat .v { font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .hr-stat.warn { border-left-color: var(--warning); }
@@ -59,18 +59,52 @@ a.hr-stat:hover, button.hr-stat:hover { border-color: var(--solar-blue); }
 .hr-score { display: grid; gap: var(--sp-2); }
 .hr-score .row { justify-content: space-between; }
 .hr-score select { max-width: 120px; }
-/* Cetak borang permohonan (sistem lama: pratonton A4 html2pdf) */
-.bf-pg { background: #fff; color: #000; width: 210mm; min-height: 297mm; margin: 0 auto var(--sp-4); padding: 14mm; box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; font-size: 10pt; }
-.bf-pg h1 { font-size: 15pt; text-align: center; margin: 0 0 2mm; color: #000; }
-.bf-pg h2 { font-size: 11pt; background: #E5E7EB; padding: 3px 6px; margin: 5mm 0 2mm; color: #000; }
-.bf-pg table { width: 100%; border-collapse: collapse; }
-.bf-pg td, .bf-pg th { border: 1px solid #000; padding: 3px 5px; vertical-align: top; font-size: 9.5pt; text-align: left; }
-.bf-pg th { background: #F3F4F6; }
-.bf-pg .lbl { width: 30%; font-weight: 700; background: #F9FAFB; }
-.bf-pg .top { display: flex; justify-content: space-between; gap: 6mm; align-items: flex-start; }
-.bf-pg .ph { width: 30mm; height: 40mm; border: 1px solid #000; object-fit: cover; }
-.bf-pg .sig { max-height: 25mm; max-width: 70mm; border-bottom: 1px solid #000; }
+/* Cetak borang permohonan: tiru #pdf-content sistem lama (.a4-container 210mm x 292mm, padding 18mm 20mm) */
 .bf-preview { background: #E5E7EB; padding: var(--sp-4); border-radius: var(--radius-card); overflow-x: auto; }
+.bf-pg { position: relative; background: #fff; color: #000; width: 210mm; height: 292mm; overflow: hidden; margin: 0 auto var(--sp-4); padding: 18mm 20mm; box-sizing: border-box; font-family: "Segoe UI", Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.45; }
+.bf-pg * { color: #000; }
+.bf-pg .head { text-align: center; border-bottom: 2px solid #000; padding-bottom: 16px; margin-bottom: 24px; }
+.bf-pg .head img { height: 64px; object-fit: contain; display: block; margin: 0 auto 12px; }
+.bf-pg .head h1 { font-size: 24px; line-height: 32px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin: 0; }
+.bf-pg .head p { font-size: 14px; color: #4B5563; margin: 4px 0 0; }
+.bf-pg .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+.bf-pg .job { width: 66%; padding-right: 16px; border-collapse: collapse; font-size: 14px; }
+.bf-pg .job td { padding: 4px 0; }
+.bf-pg .job .k { font-weight: 600; width: 33%; }
+.bf-pg .job .c { padding: 4px 8px; }
+.bf-pg .job .v { border-bottom: 1px dashed #9CA3AF; font-weight: 500; }
+.bf-pg .ph { width: 35mm; height: 45mm; border: 1px solid #9CA3AF; background: #F9FAFB; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.bf-pg .ph span { font-size: 12px; color: #9CA3AF; text-align: center; padding: 0 8px; }
+.bf-pg .ph img { width: 100%; height: 100%; object-fit: cover; }
+.bf-pg h2 { border-bottom: 2px solid #000; padding-bottom: 4px; margin: 24px 0 12px; font-weight: 700; text-transform: uppercase; font-size: 1.1rem; background: none; }
+.bf-pg h2.first { margin-top: 0; }
+.bf-pg .a4t { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .9rem; border: 1px solid #000; }
+.bf-pg .a4t th, .bf-pg .a4t td { border: 1px solid #000; padding: 6px 10px; text-align: left; vertical-align: top; }
+.bf-pg .a4t th, .bf-pg .a4t .lb { background: #E5E7EB; font-weight: 700; }
+.bf-pg .a4t .hd { text-align: center; }
+.bf-pg .a4t .up { text-transform: uppercase; font-weight: 500; }
+.bf-pg .a4t .pre { white-space: pre-line; }
+.bf-pg .a4t .empty-row { text-align: center; color: #9CA3AF; font-style: italic; }
+.bf-pg .a4t .why { background: #FEF2F2; }
+.bf-pg .a4t.half { width: 50%; margin-top: 16px; }
+.bf-pg .a4t .gaji { font-weight: 700; font-size: 18px; }
+.bf-pg .consent { border: 1px solid #000; padding: 16px; margin-top: 16px; background: #F9FAFB; font-size: 14px; text-align: justify; }
+.bf-pg .consent p { margin: 0 0 8px; }
+.bf-pg .consent .b { font-weight: 700; }
+.bf-pg .yn { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; font-size: 18px; }
+.bf-pg .cb { width: 20px; height: 20px; border: 1px solid #000; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; }
+.bf-pg .yn .cb + .cb, .bf-pg .yn .cb:nth-of-type(2) { margin-left: 16px; }
+.bf-pg .decl { margin-top: 24px; font-size: 14px; text-align: justify; }
+.bf-pg .signrow { margin-top: 64px; display: flex; justify-content: space-between; align-items: flex-end; }
+.bf-pg .signrow .k { margin: 0 0 8px; font-size: 14px; }
+.bf-pg .signrow .date { font-weight: 700; border-bottom: 1px solid #000; width: 160px; text-align: center; padding-bottom: 4px; margin: 0; }
+.bf-pg .sig { text-align: center; display: flex; flex-direction: column; align-items: center; }
+.bf-pg .sig .line { width: 192px; height: 96px; border-bottom: 1px solid #000; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; }
+.bf-pg .sig .line img { max-height: 100%; max-width: 190px; object-fit: contain; }
+.bf-pg .sig p { margin: 8px 0 0; font-size: 14px; font-weight: 600; }
+.bf-pg .secret { position: absolute; bottom: 48px; left: 80px; right: 80px; padding: 8px; font-size: 12px; font-weight: 600; text-align: center; font-style: italic; border-top: 1px dashed #9CA3AF; border-bottom: 1px dashed #9CA3AF; color: #374151; }
+.bf-pg .meta { position: absolute; bottom: 24px; left: 32px; font-size: 10px; color: #6B7280; }
+.bf-pg .pgno { position: absolute; bottom: 24px; right: 32px; font-size: 12px; color: #6B7280; }
 @media print {
   @page { size: A4; margin: 0; }
   html, body { background: #fff !important; }

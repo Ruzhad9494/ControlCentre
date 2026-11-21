@@ -168,7 +168,7 @@ function composeIc(parts) {
 }
 
 const box = (label, content) => el('div', { class: 'sk-box' }, el('div', { class: 'lbl' }, label), content);
-const missing = (text) => el('div', { class: 'slot missing' }, text);
+const missing = (text) => el('div', { class: 'slot missing' }, el('div', { class: 'miss' }, text));
 
 async function imageSlot(payload, label) {
   try {
@@ -180,12 +180,17 @@ async function imageSlot(payload, label) {
   }
 }
 
+// Sistem lama: headerHtml() - logo (26%, rowspan 3) | Company Name | Address | Date
+const REPORT_LOGO = '/shared/ui/report-logo.png';
 function header(co) {
   return el('table', { class: 'sk-hdr' },
-    el('tr', null, el('td', { class: 'brand', rowspan: '3' }, 'VOLTAKE'), el('td', { class: 'lbl' }, 'Company Name'), el('td', null, el('strong', null, co.nama || '-'))),
+    el('tr', null, el('td', { rowspan: '3', class: 'logo' }, el('img', { src: REPORT_LOGO, alt: 'Voltake Energy Services' })),
+      el('td', { class: 'lbl' }, 'Company Name'), el('td', { class: 'co' }, co.nama || '-')),
     el('tr', null, el('td', { class: 'lbl' }, 'Address'), el('td', null, co.alamat || '-')),
-    el('tr', null, el('td', { class: 'lbl' }, 'Date'), el('td', null, formatDate(S.job.tarikh))));
+    el('tr', null, el('td', { class: 'lbl' }, 'Date'), el('td', { class: 'dt' }, formatDate(S.job.tarikh))));
 }
+/** Sistem lama fmtMY: tarikh luput CIDB dipapar MM/YYYY. */
+const fmtMY = (iso) => { const m = /^(\d{4})-(\d{2})/.exec(iso || ''); return m ? `${m[2]}/${m[1]}` : '-'; };
 
 async function generate(preview, d) {
   const ids = [...S.selected];
@@ -195,15 +200,15 @@ async function generate(preview, d) {
   preview.scrollIntoView({ block: 'start' });
   const data = await call('senaraiData', { staff_ids: ids });
   const title = docTitle(false);
-  const pages = el('div', { id: 'sk-print' });
-  const cover = el('section', { class: 'sk-pg' }, header(data.syarikat), el('div', { class: 'sk-title' }, title),
+  const sections = [];
+  sections.push(el('section', { class: 'sk-pg cover' }, header(data.syarikat), el('div', { class: 'sk-title' }, title),
     el('table', { class: 'sk-tbl' },
-      el('thead', null, el('tr', null, ['NO.', 'NAME', 'DESIGNATION', 'CIDB EXPIRED DATE', 'IC NO.', 'CERT NO'].map((h) => el('th', null, h)))),
+      el('thead', null, el('tr', null, [['NO.', '5%'], ['NAME'], ['DESIGNATION'], ['CIDB EXPIRED DATE', '13%'], ['IC NO.', '16%'], ['CERT NO', '19%']]
+        .map(([h, w]) => el('th', w ? { style: 'width:' + w } : null, h)))),
       el('tbody', null, data.staf.map((s, i) => el('tr', null,
         el('td', null, `${i + 1}.`), el('td', { class: 'l' }, s.nama), el('td', null, s.designation || '-'),
-        el('td', null, s.sijil.CIDB.expiry ? formatDate(s.sijil.CIDB.expiry) : '-'), el('td', null, s.ic_no || '-'),
-        el('td', null, [...new Set(s.chargeman.map((c) => c.competency_no).filter(Boolean))].join(' / ') || '-'))))));
-  pages.append(cover);
+        el('td', null, s.sijil.CIDB.expiry ? fmtMY(s.sijil.CIDB.expiry) : '-'), el('td', null, s.ic_no || '-'),
+        el('td', null, [...new Set(s.chargeman.map((c) => c.competency_no).filter(Boolean))].join(' / ') || '-')))))));
   let done = 0;
   for (const [i, s] of data.staf.entries()) {
     clear(status).append(`Memuatkan lampiran ${s.nama} (${i + 1}/${data.staf.length})...`);
@@ -227,9 +232,14 @@ async function generate(preview, d) {
         boxes.push(box(lbl, c.ada_fail ? await imageSlot({ jenis: 'chargeman', id: c.chargeman_id }, 'Chargeman') : missing('Tiada lampiran Chargeman')));
       }
     }
-    pages.append(el('section', { class: 'sk-pg' }, header(data.syarikat), el('div', { class: 'sk-ptitle' }, `${i + 1}. ${s.nama}`), boxes));
+    sections.push(el('section', { class: 'sk-pg person' }, header(data.syarikat), el('div', { class: 'sk-ptitle' }, `${i + 1}. ${s.nama}`), boxes));
     done++;
   }
+  // Sistem lama frameHtml(): jarak atas + kaki "Copyright by Voltake" berulang pada setiap halaman cetak
+  const pages = el('table', { id: 'sk-print', class: 'print-frame' },
+    el('thead', null, el('tr', null, el('td', null, el('div', { class: 'fr-top' })))),
+    el('tfoot', null, el('tr', null, el('td', null, el('div', { class: 'fr-foot' }, 'Copyright by Voltake')))),
+    el('tbody', null, el('tr', null, el('td', null, sections))));
   let logged = '';
   try {
     const j = await call('logJob', { kerja: S.job.kerja, tempat: S.job.tempat, tarikh: S.job.tarikh, staff_ids: ids, sijil: [...S.opts] });
@@ -239,7 +249,7 @@ async function generate(preview, d) {
     el('div', { class: 'row-between' }, el('h3', { style: 'margin:0' }, 'Pratonton'),
       el('div', { class: 'row' }, el('button', { class: 'btn', type: 'button', onclick: () => window.print() }, icon('printer'), 'Cetak / simpan PDF'),
         el('button', { class: 'btn btn-ghost', type: 'button', onclick: () => { preview.hidden = true; clear(preview); } }, icon('x'), 'Tutup'))),
-    el('p', { class: 'caption', style: 'margin:0' }, `${done} personel · ${pages.children.length} muka surat${logged}. Dalam dialog cetak pilih "Save as PDF", saiz A4, margin "None".`),
+    el('p', { class: 'caption', style: 'margin:0' }, `${done} personel · ${sections.length} bahagian${logged}. Dalam dialog cetak pilih "Save as PDF", saiz A4, margin "None".`),
     el('div', { class: 'sk-preview' }, pages));
 }
 

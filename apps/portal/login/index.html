@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#0B2545">
+  <meta name="theme-color" content="#030306">
   <title>Log masuk - Voltake</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
@@ -16,25 +16,30 @@
   <script src="https://accounts.google.com/gsi/client" async></script>
   <script type="module" src="/assets/login.js"></script>
 </head>
-<body class="center-page">
-  <main>
-    <div class="center-card">
-      <div class="logo"><span class="logo-mark" aria-hidden="true">V</span><span>VOLTAKE</span></div>
-      <section class="card stack" aria-labelledby="tajuk">
-        <div>
-          <h1 id="tajuk">Log masuk</h1>
-          <p class="muted">Voltake Operations Portal. Satu login untuk semua sistem.</p>
-        </div>
-        <div id="msg" role="alert" hidden></div>
-        <div class="gsi-slot" id="gsi"><div class="skeleton" style="width:260px;height:44px"></div></div>
-        <p class="caption" style="text-align:center">Guna akaun @voltake.com anda, atau Gmail yang didaftar dengan HR.</p>
-        <details>
-          <summary class="caption">Notis privasi</summary>
-          <div id="privacy" style="margin-top:12px"></div>
-        </details>
-      </section>
-      <p class="foot"><a href="/install/">Cara install app di telefon</a></p>
-    </div>
+<body class="login-page">
+  <div class="fx" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+  <main class="login-wrap">
+    <section class="login-hero">
+      <span class="accent" aria-hidden="true"></span>
+      <h1>Satu portal, semua kerja operasi.</h1>
+      <p>Voltake Operations Portal. Log masuk sekali untuk GWR, ClaimPro, AMS, Compliance dan sistem lain.</p>
+    </section>
+    <section class="glass" aria-labelledby="tajuk">
+      <div class="brand">
+        <img src="/icons/logo-mark.png" alt="" width="44" height="44">
+        <div><strong>Voltake Portal</strong><span>Voltake Energy Services</span></div>
+      </div>
+      <h1 id="tajuk">Log masuk</h1>
+      <p class="lead">Guna akaun @voltake.com anda, atau Gmail yang didaftar dengan HR.</p>
+      <div id="msg" role="alert" hidden></div>
+      <div class="gsi-slot" id="gsi"><div class="skeleton" style="width:260px;height:44px"></div></div>
+      <details style="margin-top:18px">
+        <summary class="caption">Notis privasi</summary>
+        <div id="privacy" style="margin-top:12px"></div>
+      </details>
+      <div class="glass-foot"><span>Bahasa Malaysia</span><a href="/install/">Cara install app di telefon</a></div>
+    </section>
   </main>
 </body>
 </html>

@@ -195,16 +195,20 @@ function csvCell(v) {
   return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 
+/** Sistem lama downloadCSV: lajur & nama fail sama (Senarai_Aset_YYYYMMDD.csv), nilai kosong = "-". */
 function downloadCsv(rows) {
-  const head = ['No.', 'No. aset', 'Kategori', 'Jenama (Make)', 'Model', 'Siri (S/N)', 'Lokasi asal', 'Lokasi semasa', 'Pemegang semasa', 'Status pinjaman',
-    'Tarikh luput sijil', 'Status luput', 'Dikalibrasi oleh', 'Audit terakhir', 'Status audit', 'Catatan audit'];
-  const lines = [head, ...rows.map((a, i) => [i + 1, a.asset_no, a.kategori, a.make, a.model, a.serial_no, a.lokasi_asal, a.lokasi_semasa || a.lokasi, a.pemegang_nama,
-    a.status_pinjaman, a.calib_expiry ? formatDate(a.calib_expiry) : '', a.calib_status, a.calib_by, a.last_audit_date ? formatDate(a.last_audit_date) : '', a.audit_status, a.audit_remark])];
-  const blob = new Blob(['﻿' + lines.map((l) => l.map(csvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const head = ['No.', 'Kategori', 'Jenama (Make)', 'Model', 'Siri (S/N)', 'Lokasi Asal', 'Lokasi Semasa', 'Pemegang Semasa', 'Status Pinjaman',
+    'Tarikh Luput Sijil', 'Status Luput', 'Dikalibrasi Oleh', 'Audit Terakhir', 'Status Audit', 'Catatan (Remark)'];
+  const d = (v) => (v === null || v === undefined || String(v).trim() === '' ? '-' : v);
+  const lines = [head, ...rows.map((a, i) => [i + 1, d(a.kategori), d(a.make), d(a.model), d(a.serial_no), d(a.lokasi_asal), d(a.lokasi_semasa || a.lokasi), d(a.pemegang_nama),
+    a.status_pinjaman || 'Tersedia', a.calib_expiry ? formatDate(a.calib_expiry) : '-', d(a.calib_status), d(a.calib_by), a.last_audit_date ? formatDate(a.last_audit_date) : '-',
+    d(a.audit_status), d(a.audit_remark || a.catatan)])];
+  const blob = new Blob(['\uFEFF' + lines.map((l) => l.map(csvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = el('a', { href: url, download: `Senarai_Aset_${todayIso().replace(/-/g, '')}.csv` });
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Senarai aset berjaya dimuat turun sebagai CSV.', 'info');
 }
 
 function assetCard(a, { actions, top } = {}) {

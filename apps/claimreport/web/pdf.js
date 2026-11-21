@@ -37,7 +37,7 @@ export async function listPdf(title, rows) {
     body: rows.map((r) => [formatDate(r.tarikh), r.do_no, r.truck || '-', cut(r.from_name, 25), cut(r.to_name, 25), String(r.item_count), r.total_carton || '0']),
     startY: 20,
     styles: { fontSize: 8, font: 'helvetica' },
-    headStyles: { fillColor: [11, 37, 69] },
+    headStyles: { fillColor: [14, 165, 233] },   // sistem lama: biru langit
     margin: { top: 20 },
   });
   doc.save(`${title.replace(/ /g, '_')}_List.pdf`);

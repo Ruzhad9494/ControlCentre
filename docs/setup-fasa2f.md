@@ -124,3 +124,25 @@ Batalkan report ujian (manager > Batalkan) sebelum go-live.
 | "Department anda bukan OMP / PSS" | Department staf dalam portal lain; isi skop `dept=OMP` atau `dept=PSS` |
 | PDF final tiada selepas klien sahkan | Lihat Apps Script > Executions (log "PDF final gagal"); gambar terlalu banyak / besar |
 | Report tersekat "Gagal" dalam barisan telefon | Mesej ralat dipapar (contoh report sudah disahkan). Buang dari barisan selepas semak |
+
+## Kemas kini 21/11/2026: PDF ikut susun atur GWR lama
+
+PDF draf dan final kini ditiru dari pratonton A4 sistem lama: kepala dengan logo report + "VOLTAKE ENERGY (PSS/OMP)",
+no. pendaftaran, telefon, emel, laman web; kotak "PROJECT INFORMATION" 2 lajur; jadual JOB DESCRIPTION / REMARK dengan
+lencana merah SHUTDOWN; UNRESOLVED ISSUE; MANPOWER (Position | Pax | Name + Total); muka "VERIFICATIONS / PENGESAHAN";
+muka gambar 2 x 3 bernombor; kaki "© tahun All Right Reserved by Voltake" dan "Page X of N". Masa ikut format lama
+(`21/11/2026 ; 08:30 AM`). Tarikh DD/MM/YYYY.
+
+Kalau Apps Script `VP-gwr` sudah disetup, buat ini sekali:
+
+1. Paste semula dari GitHub folder `apps/gwr/gas/`: **`Pdf`** (berubah), **`Schema`** (berubah), **`appsscript.json`** (tambah kebenaran "external request" untuk muat logo report dari portal), dan fail BARU **`ReportAssets`** (+ > Script > namakan `ReportAssets`). Ctrl+S.
+2. Run **`setupSystem`** sekali lagi. Benarkan kebenaran baharu "Connect to an external service". Tab Settings dapat baris baru `report_logo_file_id`.
+3. Run **`ujiPdf`**. Log papar pautan PDF contoh dalam Drive. Buka dan semak rupa PDF (kepala, logo, jadual). Padam fail ujian itu selepas semak.
+4. **Deploy > Manage deployments >** pensel (Edit) **> Version: New version > Deploy**. URL `/exec` kekal sama, jadi env Cloudflare tak perlu diubah.
+
+**Logo report** (berbeza dari logo V aplikasi): lalai ialah logo "Voltake Energy Services" dari sistem lama. Untuk tukar:
+- cara mudah: ganti fail `shared/ui/report-logo.png` dalam GitHub (PNG, < 70KB). Report GWR, borang HR dan Senarai Kerja Compliance terus guna logo baru selepas deployment Cloudflare; ATAU
+- untuk PDF GWR sahaja: upload logo ke Drive `VP-Files`, salin ID fail, isi Settings `report_logo_file_id`.
+
+Nota: penukar HTML ke PDF Google tidak sama 100% dengan pelayar. Susun atur dibina dengan jadual (bukan flex/grid) supaya
+selamat. Jika ada bahagian yang lari (contoh muka kosong tambahan), hantar screenshot PDF `ujiPdf` untuk diselaraskan.
