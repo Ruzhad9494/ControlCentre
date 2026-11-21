@@ -1,4 +1,4 @@
-# Setup Fasa 2F - GWR (Ground Work Report OMP + PSS)
+# Setup Fasa 2F - GWR (Ground Work Report OMP + PSS) selesai
 
 Terus ke production, tiada staging. Ikut langkah 1 hingga 9 mengikut susunan. Kad modul kekal "Akan datang" kepada staf sehingga langkah 9 siap.
 
