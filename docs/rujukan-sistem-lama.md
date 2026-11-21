@@ -130,3 +130,40 @@ Sumber: `voltake-energy/Compliance-Track` ("UniTrack": `apps-script/Code.gs`, `S
 | Tiada emel | Laporan Isnin (30 / 60 / 90 hari) kepada HR/PSS + peringatan kepada staf yang sijilnya tamat / ≤ 30 hari | PRD F-63 |
 | Backup harian ke folder Drive | Bergantung pada sejarah versi Google Sheets + padam lembut | Kurang bahagian bergerak |
 
+---
+
+## Draft Mohon Kerja: lama vs baharu
+
+Sumber: `Ruzhad9494/draftmohonkerja` (`appscript/Code.gs`, `index.html`, `dashboard/`, `interview/`), dibaca 21/11/2026.
+
+### Peraturan yang DIBAWA sama
+
+| Sistem lama | Dalam sistem baharu |
+|---|---|
+| Tab Setup (Jawatan, Department), jawatan unik, urus dari dashboard | `Positions` + skrin Jawatan (tambah buka/tutup, lokasi, penerangan, tarikh tutup) |
+| Borang: gambar dipotong saiz passport, jawatan dari senarai atau taip sendiri, nama, IC, telefon bimbit & rumah, emel, alamat, jantina, taraf perkahwinan | Sama (tarikh lahir dikira terus dari IC) |
+| Akademik & pengalaman kerja berbilang baris (Dari, Hingga, Sekolah/Majikan, Kelulusan/Jawatan) | Sama |
+| Kecemasan: nama, hubungan (Ibu, Bapa, Pasangan, Adik-Beradik, Anak, Penjaga, Lain-Lain), jenis telefon, no. | Sama |
+| Soalan rekod jenayah + alasan, gaji dipohon, 2 rujukan, kebenaran semakan latar belakang, tandatangan digital | Sama |
+| Status: Baru, Disaring, Temuduga Dijadualkan, Ditawarkan, Diterima, Ditolak | Sama + Tarik diri |
+| HR kemas kini Department, Status, Tarikh interview, Catatan HR; kiraan tukar tarikh interview (set kali pertama tak dikira) | Sama |
+| Dashboard: KPI ikut status, amaran interview dalam 7 hari, carian & penapis | Sama |
+| Papan interviewer: hanya pemohon department sendiri, ditapis di server | Sama prinsip, tetapi melalui role `interviewer` + skop department |
+| Pratonton borang A4 (cetak / PDF) | Borang A4 dijana dari data untuk HR (cetak / simpan PDF) |
+
+### Perbezaan yang DISENGAJAKAN
+
+| Lama | Baharu | Sebab |
+|---|---|---|
+| `SECRET_KEY` ditulis dalam HTML dashboard | Login Google + role `hr_admin` | TRD 5 |
+| Pautan papan interviewer berasaskan token department (boleh dikongsi, tiada log) | Role `interviewer` dengan skop department; setiap capaian direkod | PRD F-12 |
+| Interviewer nampak semua medan | IC dimask; tiada rekod jenayah, alamat, telefon, emel, rujukan, catatan HR | PDPA (BSD 3.2) |
+| Gambar & PDF dikongsi "anyone with link" | Fail peribadi dalam `VP-Files/HR`, dibuka melalui portal | TRD 6 |
+| PDF borang dijana di pelayar pemohon dan dimuat naik | Data berstruktur disimpan; borang A4 dijana bila HR perlukan | Data boleh ditapis; tiada PDF palsu |
+| Tiada notis privasi / persetujuan | Notis Privasi Pemohon PN-HR-2026-11 + tanda persetujuan (masa & versi direkod) | PDPA, PRD F-10 |
+| Tiada anti-bot | Turnstile + 10 hantaran / 10 minit / IP + medan honeypot | TRD 5 |
+| No. SOCSO, No. KWSP | Tidak dikumpul (selepas tawaran) | PRD Q-09 |
+| Data disimpan selamanya | Ditolak / Tarik diri dianonimkan selepas 12 bulan; HR boleh anonimkan atas permintaan | PRD F-14, Q-05 |
+| Tiada markah interview | Interviewer beri markah 1-5 (5 kriteria) + cadangan | PRD F-12 |
+| Tiada emel | HR dimaklumkan bila permohonan baru (no. rujukan sahaja) | Ringkas, tiada data peribadi dalam emel |
+

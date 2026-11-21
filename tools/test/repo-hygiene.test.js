@@ -42,8 +42,8 @@ test('.env.example hanya nama pemboleh ubah, tiada nilai', () => {
   const lines = fs.readFileSync(path.join(ROOT, '.env.example'), 'utf8').split('\n')
     .filter((l) => l.trim() && !l.trim().startsWith('#'));
   for (const l of lines) assert.match(l, /^[A-Z0-9_]+=$/, 'Ada nilai dalam .env.example: ' + l);
-  // TRD 9: 8 modul x (GAS_URL + MODULE_SECRET) + 5 asas
-  assert.equal(lines.length, 21);
+  // TRD 9: 8 modul x (GAS_URL + MODULE_SECRET) + 6 asas (TURNSTILE_SITE_KEY ditambah Fasa 2E; bukan rahsia)
+  assert.equal(lines.length, 22);
 });
 
 test('struktur repo ikut TRD 4', () => {

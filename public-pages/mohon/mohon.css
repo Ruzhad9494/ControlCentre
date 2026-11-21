@@ -1,0 +1,24 @@
+/* Borang permohonan jawatan awam (S-10, S-11) */
+.mh-top { background: var(--navy); color: #fff; padding: 14px 0; }
+.mh-top .container { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.mh-top .brand { letter-spacing: 1px; }
+.mh-top .caption { color: rgba(255, 255, 255, .8); }
+.mh-form { display: grid; gap: var(--sp-4); max-width: 760px; margin: 0 auto; }
+.mh-sec { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--sp-4); display: grid; gap: var(--sp-3); }
+.mh-sec h2 { font-size: 18px; margin: 0; }
+.mh-grid { display: grid; gap: var(--sp-3); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.mh-grid > * { min-width: 0; }
+.mh-grid .full { grid-column: 1 / -1; }
+@media (max-width: 599px) { .mh-grid { grid-template-columns: minmax(0, 1fr); } }
+.mh-row { border: 1px dashed var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); display: grid; gap: var(--sp-2); }
+.mh-row .mh-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.mh-radio { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); }
+.mh-photo { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; }
+.mh-photo .frame { width: 105px; height: 140px; border: 2px dashed var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--mist); overflow: hidden; color: var(--muted); font-size: 12px; text-align: center; }
+.mh-photo .frame img { width: 100%; height: 100%; object-fit: cover; }
+.mh-sign { border: 1px solid var(--border); border-radius: var(--radius-ctl); background: #fff; touch-action: none; width: 100%; height: 160px; display: block; }
+.mh-privacy { max-height: 280px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); background: var(--mist); font-size: 14px; }
+.mh-privacy ul { margin: 4px 0 8px; padding-left: 20px; }
+.mh-hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.mh-done { max-width: 560px; margin: 0 auto; text-align: center; }
+.mh-ref { font-size: 26px; font-weight: 800; letter-spacing: 1px; color: var(--navy); font-variant-numeric: tabular-nums; }

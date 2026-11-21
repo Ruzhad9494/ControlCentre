@@ -1,0 +1,82 @@
+/* Mohon Kerja - tambahan kecil atas shared/ui/voltake.css */
+.hr-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.hr-stat { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); }
+.hr-stat .label { font-size: 13px; color: var(--muted); }
+.hr-stat .v { font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hr-stat.warn { border-left-color: var(--warning); }
+.hr-stat.ok { border-left-color: var(--success); }
+.hr-list { display: grid; gap: var(--sp-3); }
+.hr-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: var(--sp-4); }
+.hr-card.warn { border-color: rgba(180, 83, 9, .5); }
+.hr-card .top { display: flex; justify-content: space-between; gap: var(--sp-3); align-items: flex-start; flex-wrap: wrap; }
+.hr-card .amt { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hr-card .meta { color: var(--muted); font-size: 13px; }
+.hr-card .desc { margin: var(--sp-2) 0; overflow-wrap: anywhere; }
+.hr-form { display: grid; gap: var(--sp-4); max-width: 640px; }
+.hr-grid { display: grid; gap: var(--sp-3); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.hr-grid > * { min-width: 0; }
+.hr-grid .full { grid-column: 1 / -1; }
+.file-pick { border: 2px dashed var(--border); border-radius: var(--radius-card); padding: var(--sp-4); text-align: center; background: var(--mist); }
+.file-pick.has { border-style: solid; border-color: var(--success); background: rgba(21, 128, 61, .06); }
+.file-pick img { max-width: 100%; max-height: 220px; border-radius: 6px; margin-top: var(--sp-3); }
+.timeline { list-style: none; padding: 0; margin: 0; }
+.timeline li { position: relative; padding: 0 0 var(--sp-3) var(--sp-5); border-left: 2px solid var(--border); margin-left: 6px; }
+.timeline li::before { content: ""; position: absolute; left: -7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--solar-blue); }
+.timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
+.timeline .t { font-size: 13px; color: var(--muted); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px var(--sp-4); margin: 0; }
+.kv dt { color: var(--muted); font-size: 13px; padding-top: 2px; }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 479px) { .kv { grid-template-columns: 1fr; } .kv dd { margin-bottom: var(--sp-2); } }
+.share-img { max-width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--border); }
+.num { font-variant-numeric: tabular-nums; }
+.file-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; text-align: left; }
+.file-list li { display: flex; align-items: center; gap: var(--sp-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: 4px 4px 4px 10px; min-height: var(--tap); flex-wrap: wrap; }
+.file-list li .grow { min-width: 0; overflow-wrap: anywhere; }
+/* AMS: kad lokasi, kotak pilih troli, bar kemajuan audit, gambar aset */
+.hr-stat { cursor: default; }
+a.hr-stat, button.hr-stat { cursor: pointer; text-align: left; font: inherit; color: inherit; text-decoration: none; display: block; width: 100%; }
+a.hr-stat:hover, button.hr-stat:hover { border-color: var(--solar-blue); }
+.hr-stat.bad { border-left-color: var(--danger); }
+.hr-stat.info { border-left-color: var(--solar-blue); }
+.hr-section { display: grid; gap: var(--sp-3); }
+.hr-section h3 { margin: 0; }
+.hr-filters { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.hr-filters > * { min-width: 0; }
+.hr-card.pick { border-color: var(--solar-blue); box-shadow: 0 0 0 2px rgba(37, 99, 235, .35); }
+.hr-card.off { opacity: .65; }
+.hr-card .sn { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.hr-progress { height: 10px; border-radius: 999px; background: var(--mist); border: 1px solid var(--border); overflow: hidden; }
+.hr-progress > span { display: block; height: 100%; background: var(--success); }
+.hr-cart { position: sticky; bottom: calc(var(--sp-3) + env(safe-area-inset-bottom)); z-index: 5; display: flex; justify-content: flex-end; pointer-events: none; }
+.hr-cart .btn { pointer-events: auto; box-shadow: var(--shadow-card); }
+.hr-photo { max-width: 100%; max-height: 260px; border-radius: 8px; border: 1px solid var(--border); }
+@media (max-width: 767px) { .hr-card .btn-sm, .hr-list .btn-sm { min-height: var(--tap); } }
+/* Mohon Kerja */
+.hr-photo { width: 96px; height: 128px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); background: var(--mist); }
+.hr-head { display: flex; gap: var(--sp-4); align-items: flex-start; flex-wrap: wrap; }
+.hr-pipe { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.hr-score { display: grid; gap: var(--sp-2); }
+.hr-score .row { justify-content: space-between; }
+.hr-score select { max-width: 120px; }
+/* Cetak borang permohonan (sistem lama: pratonton A4 html2pdf) */
+.bf-pg { background: #fff; color: #000; width: 210mm; min-height: 297mm; margin: 0 auto var(--sp-4); padding: 14mm; box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; font-size: 10pt; }
+.bf-pg h1 { font-size: 15pt; text-align: center; margin: 0 0 2mm; color: #000; }
+.bf-pg h2 { font-size: 11pt; background: #E5E7EB; padding: 3px 6px; margin: 5mm 0 2mm; color: #000; }
+.bf-pg table { width: 100%; border-collapse: collapse; }
+.bf-pg td, .bf-pg th { border: 1px solid #000; padding: 3px 5px; vertical-align: top; font-size: 9.5pt; text-align: left; }
+.bf-pg th { background: #F3F4F6; }
+.bf-pg .lbl { width: 30%; font-weight: 700; background: #F9FAFB; }
+.bf-pg .top { display: flex; justify-content: space-between; gap: 6mm; align-items: flex-start; }
+.bf-pg .ph { width: 30mm; height: 40mm; border: 1px solid #000; object-fit: cover; }
+.bf-pg .sig { max-height: 25mm; max-width: 70mm; border-bottom: 1px solid #000; }
+.bf-preview { background: #E5E7EB; padding: var(--sp-4); border-radius: var(--radius-card); overflow-x: auto; }
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { background: #fff !important; }
+  body * { visibility: hidden !important; }
+  #bf-print, #bf-print * { visibility: visible !important; }
+  #bf-print { position: absolute; left: 0; top: 0; width: 210mm; }
+  .bf-pg { margin: 0; page-break-after: always; break-after: page; }
+  .bf-pg:last-child { page-break-after: auto; break-after: auto; }
+}

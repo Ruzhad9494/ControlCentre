@@ -224,7 +224,7 @@ Calon pertama: ClaimPro dan HR. Reka bentuk `/api` gateway bermakna frontend tak
 | Repo | `voltake-energy/voltake-portal` (private), branch `main` = production |
 | Hosting | Cloudflare Pages, projek `voltake-portal`, custom domain `cc.voltake.com` (CNAME dari DNS sedia ada) |
 | Preview | Setiap branch dapat URL `<branch>.voltake-portal.pages.dev`; branch `staging` tetap untuk ujian dengan Sheet staging |
-| Env variables (Cloudflare, Production & Preview berasingan) | `GOOGLE_CLIENT_ID`, `SESSION_SECRET`, `ACCESS_GAS_URL`, `ACCESS_SECRET`, `GAS_URL_<MODULE>` x8, `MODULE_SECRET_<MODULE>` x8, `TURNSTILE_SECRET` |
+| Env variables (Cloudflare, Production & Preview berasingan) | `GOOGLE_CLIENT_ID`, `SESSION_SECRET`, `ACCESS_GAS_URL`, `ACCESS_SECRET`, `GAS_URL_<MODULE>` x8, `MODULE_SECRET_<MODULE>` x8, `TURNSTILE_SECRET`, `TURNSTILE_SITE_KEY` (bukan rahsia; dibaca borang awam melalui `GET /public/api/config`) |
 | Apps Script | 9 projek (8 modul + access), setiap satu dideploy dengan `clasp push` + `clasp deploy` dari `apps/<modul>/gas/` |
 | Pemilik akaun | `systems@voltake.com` (akaun Workspace khas) pegang Sheet, Script, Drive; Cloudflare dan GitHub org dengan sekurang-kurangnya 2 admin |
 | OAuth consent screen | User type **External** (kerana staf guna Gmail), status "In production", scope `openid email profile` sahaja. Scope asas ni biasanya tak perlukan verifikasi Google (**sahkan** semasa Fasa 0) |

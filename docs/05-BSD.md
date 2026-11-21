@@ -152,7 +152,9 @@ Kunci unik: `email` + `module_id`. Tiada baris = tiada akses modul tu.
 | anonymised | bool | ya | Default FALSE | HR |
 | + medan audit | | | `created_by` = `public` untuk borang | |
 
-Medan **dibuang** berbanding sistem lama (cadangan Q-09): `socso`, `kwsp`, `tel_rumah`, `semak`. KWSP/SOCSO dikumpul selepas tawaran (proses onboarding, luar skop v1.0).
+Medan **dibuang** berbanding sistem lama (cadangan Q-09): `socso`, `kwsp`. KWSP/SOCSO dikumpul selepas tawaran (proses onboarding, luar skop v1.0).
+
+Nota pelaksanaan Fasa 2E (ikut sistem lama draftmohonkerja, 21/11/2026): `tel_rumah` dan `kebenaran_semak` (lama `semak`, kebenaran semakan latar belakang) **dikekalkan** seperti borang lama. Status ikut dashboard lama: `Baru`, `Disaring`, `Temuduga Dijadualkan`, `Ditawarkan`, `Diterima`, `Ditolak` + `Tarik diri`. Jantina `Lelaki` / `Perempuan`. `ic` disimpan 12 digit, `dob` dikira dari IC. Tambahan: `jawatan` (salinan nama, juga untuk "jawatan sendiri" bila pemohon taip jawatan yang tiada dalam senarai), `kecemasan_jenis_tel`, `signature_file_id` (tandatangan digital, sistem lama), `borang_lama_file_id` (PDF borang dari sistem lama), `status_at`, `interview_tukar` (kiraan tukar tarikh interview, sistem lama `Interview_Tukar`), `ip_hash`. `resume_file_id` **pilihan** (sistem lama tiada resume; borang itu sendiri ialah dokumen). `interviewer_email` tidak digunakan: interviewer ditentukan oleh skop department. `Interviews.markah_json` 5 kriteria 1-5 + `purata`, `interviewer_nama`. Tab `Settings` (`portal_url`, `hr_notify_emails`, `retention_bulan` 12, `benarkan_jawatan_lain`, `amaran_interview_hari` 7).
 
 #### `Interviews`
 `interview_id`, `app_no`, `interviewer_email`, `tarikh`, `markah` (1-5 per kriteria, JSON), `cadangan` (`Teruskan`, `Simpan`, `Tolak`), `catatan`, + audit.
@@ -347,8 +349,8 @@ C = cipta, R = baca, U = kemas kini, D = soft delete. "sendiri" = rekod `staff_e
 | VP-Access.Modules, UserAccess | superadmin CRUD (setiap perubahan UserAccess ditulis ke AccessChangeLog) · lain: - (portal hanya terima roles diri sendiri) |
 | VP-Access.LoginLog | superadmin R |
 | VP-HR.Positions | hr_admin CRUD · public R (aktif sahaja, medan terhad) |
-| VP-HR.Applicants | hr_admin RU (penuh) · interviewer R (dept sendiri, medan "interviewer" seksyen 3.2, IC dimask) · public C sahaja (tak boleh baca) · superadmin R |
-| VP-HR.Interviews | hr_admin R · interviewer CRU (sendiri) |
+| VP-HR.Applicants | hr_admin RU (penuh) + anonimkan · interviewer R (dept skop sendiri, medan "interviewer" seksyen 3.2, IC dimask; di luar skop = 404) · public C sahaja melalui `/public/api` (tak boleh baca) · superadmin seperti hr_admin |
+| VP-HR.Interviews | hr_admin R semua + CRU sendiri · interviewer CRU (sendiri; satu penilaian setiap pemohon) |
 | VP-CostCalc.Rates | admin CRU · user R |
 | VP-CostCalc.Estimates | user CRU (sendiri), R (semua dalam dept) · admin CRUD |
 | VP-GWR.Reports | technician/chargeman CRU (sendiri, U hanya status `Draf`) · engineer/supervisor R (dept) + CRU sendiri · manager R (dept) + D (dengan sebab) · public U medan klien sahaja melalui token sah · viewer R |
@@ -400,7 +402,7 @@ Senarai `ACTION_ROLES` penuh untuk setiap modul ditulis dalam `apps/<modul>/gas/
 
 | Modul | Folder Drive (dalam `VP-Files/`) | Jenis | Had | Akses |
 |---|---|---|---|---|
-| hr | `HR/Resume`, `HR/Photo` | PDF, JPG/PNG | 5MB | hr_admin, interviewer (dept) melalui `getFile` |
+| hr | `HR/Photos`, `HR/Signatures`, `HR/Resumes`, `HR/Forms` | JPG/PNG (gambar, tandatangan), PDF (resume) | 5MB | hr_admin, interviewer (dept) melalui `getFile`; tandatangan HR sahaja |
 | claimpro | `ClaimPro/Receipts/YYYY-MM`, `ClaimPro/Payments` (bukti terima staf + bukti bayaran syarikat) | JPG/PNG/HEIC/WEBP/PDF | 10MB sefail, 10 resit | pemilik tuntutan, claimpro `admin`/`ketua` |
 | gwr | `GWR/<dept>/Images`, `Signatures`, `PDF` | JPG/PNG, PDF | 5MB/gambar, 10 gambar | staf pemilik, dept (engineer ke atas) melalui `getFile`. PDF final dihantar sebagai lampiran emel kepada staf & klien (tiada perkongsian Drive) |
 | ams | `AMS/Photos`, `AMS/Certs`, `AMS/Audits`, `AMS/Returns` | JPG/PNG/HEIC/WEBP/PDF | 10MB (sama ClaimPro) | sijil & gambar aset: semua role ams; gambar audit: admin/auditor; gambar pulang: admin + peminjam |
@@ -438,7 +440,7 @@ function setupSystem() {
 | Projek | Tab dicipta | Seed awal | Validasi dropdown | Trigger dicipta |
 |---|---|---|---|---|
 | access | Staff, Modules, UserAccess, AccessChangeLog, LoginLog, Settings, _Counters | 8 baris `Modules`; 1 baris `Staff` + `UserAccess` `*`/`superadmin` untuk Ir Aswad (emel diisi semasa run, bukan dalam kod); `Settings` asas | department, status, jenis_emel, mod | Bulanan: senarai staf `aktif` yang tak login > 60 hari dihantar ke HR untuk semakan |
-| hr | Positions, Applicants, Interviews, AuditLog, _Counters | - | status, jantina, pernah_disabit | Harian 2:00 retention; harian 9:00 digest |
+| hr | Positions, Applicants, Interviews, Settings, AuditLog, _Counters | Settings | status, cadangan, aktif | Harian 2:00 retention (anonimkan Ditolak / Tarik diri selepas `retention_bulan`) |
 | costcalc | Rates, Estimates, AuditLog, _Counters | `Rates` dengan `rate_key` sahaja, nilai kosong (diisi Commercial) | status | - |
 | gwr | Reports, Settings, AuditLog, _Counters | Settings kunci template | dept, status, job_shutdown, ptw | Harian: tandakan `Luput` token tamat |
 | ams | Assets, CalibrationLog, Audits, Movements, AuditLog, _Counters | - | status, keadaan | Isnin 8:00 kalibrasi luput |
