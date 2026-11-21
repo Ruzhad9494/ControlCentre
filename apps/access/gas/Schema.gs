@@ -9,7 +9,7 @@ var SCHEMA = {
   Staff: [
     'staff_id', 'email', 'jenis_emel', 'google_sub', 'mfa_disahkan', 'last_login_at',
     'nama', 'department', 'designation', 'status', 'token_version', 'tarikh_mula', 'tarikh_tamat'
-  ].concat(AUDIT_FIELDS),
+  ].concat(AUDIT_FIELDS, ['photo_file_id']),   // photo_file_id: gambar profil (21/11/2026), di hujung supaya lajur lama tak beralih
   Modules: [
     'module_id', 'nama', 'path', 'ikon', 'subtajuk', 'roles_sah', 'susunan', 'status'
   ].concat(AUDIT_FIELDS),

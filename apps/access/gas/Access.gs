@@ -6,7 +6,7 @@
  * - Action admin (S-04, S-05, S-06): role dikira semula dari Sheet, bukan dipercayai dari gateway.
  */
 
-var SYSTEM_ACTIONS = { getAccess: true, logLoginEvent: true };
+var SYSTEM_ACTIONS = { getAccess: true, logLoginEvent: true, getPhoto: true, setPhoto: true };
 
 var ACCESS_ACTION_ROLES = {
   listStaff:           ['superadmin', 'hr_admin'],
@@ -37,6 +37,8 @@ function doGet() {
 function routeAccess_(req) {
   if (SYSTEM_ACTIONS[req.action]) {
     if (!req.user || req.user.system !== true) throw httpError_(403, 'Tiada kebenaran');
+    if (req.action === 'getPhoto') return getPhoto_(req.payload || {});
+    if (req.action === 'setPhoto') return setPhoto_(req.payload || {});
     return req.action === 'getAccess' ? getAccess_(req.payload) : logLoginEvent_(req.payload);
   }
   var ss = openAccess_();
@@ -123,7 +125,9 @@ function getAccess_(p) {
       nama: String(unsanitize_(st.nama)),
       department: String(st.department),
       designation: String(unsanitize_(st.designation)),
-      jenis_emel: String(st.jenis_emel)
+      jenis_emel: String(st.jenis_emel),
+      // Gambar profil: versi = 8 aksara terakhir ID fail (tukar gambar = URL baru, cache pelayar tak basi)
+      gambar_v: String(st.photo_file_id || '') ? String(st.photo_file_id).slice(-8) : ''
     },
     status: 'aktif',
     token_version: Number(st.token_version) || 1,

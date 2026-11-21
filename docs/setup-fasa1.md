@@ -89,3 +89,17 @@ Selepas beberapa login di preview/production: Cloudflare > projek > **Metrics** 
 ## H. Production
 
 Bila staging lulus semua ujian: ulang A hingga D untuk `VP-access` (Sheet `VP-Access`, `ENV=prod`, secret production yang berbeza), isi env **Production**, dan merge branch ke `main` (production branch Cloudflare).
+
+## Kemas kini 21/11/2026: gambar profil staf
+
+Staf boleh letak gambar profil sendiri: menu profil (bucu kanan atas) > **Gambar profil**. Gambar dipotong segi empat dan
+dikecilkan ke 256px dalam pelayar, kemudian disimpan PERIBADI dalam `VP-Files/Access/Photos` (bukan "anyone with link").
+Staf hanya boleh tukar / buang gambar sendiri (emel diambil dari sesi).
+
+Dalam Apps Script `VP-access` (projek access), buat sekali:
+
+1. Paste semula dari GitHub folder `apps/access/gas/`: **`Access`** dan **`Schema`** (berubah), dan tambah fail BARU **`Photo`** (+ > Script > namakan `Photo`). Ctrl+S.
+2. Run **`setupSystem`**. Tab Staff dapat lajur baru `photo_file_id` di hujung.
+3. **Deploy > Manage deployments >** pensel (Edit) **> Version: New version > Deploy**. URL `/exec` kekal sama.
+
+Sehingga langkah ini dibuat, menu "Gambar profil" akan papar ralat dan avatar kekal huruf awal nama.

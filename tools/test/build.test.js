@@ -103,7 +103,8 @@ test('sw.js: setiap fail SHELL wujud dalam output; /api dan /auth tidak di-cache
   const files = build(out);
   const sw = fs.readFileSync(path.join(out, 'sw.js'), 'utf8');
   const shell = JSON.parse(sw.match(/const SHELL = (\[[\s\S]*?\]);/)[1].replace(/'/g, '"').replace(/,\s*\]/, ']'));
-  for (const u of shell) {
+  for (const u0 of shell) {
+    const u = u0.split('?')[0];   // ?v=2 = cache-bust sahaja
     const f = u === '/' ? 'index.html' : u.endsWith('/') ? u.slice(1) + 'index.html' : u.slice(1);
     assert.ok(files.includes(f), 'SHELL rujuk fail tiada: ' + u);
   }

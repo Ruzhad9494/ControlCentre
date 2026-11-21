@@ -119,11 +119,13 @@ export function renderHeader(me, crumb = 'Dashboard') {
       el('br'),
       el('span', { class: 'caption' }, 'Log masuk sebagai ' + me.staff.email)),
     el('a', { href: '/' }, icon('layout-grid'), 'Dashboard'),
+    el('button', { type: 'button', onclick: () => { setOpen(false); photoModal(me, (v) => { me.staff.gambar_v = v; avatarSlot.replaceChildren(avatarNode(me)); }); } }, icon('camera'), 'Gambar profil'),
     el('a', { href: '/install/' }, icon('smartphone'), 'Install app'),
     el('a', { href: '/about/' }, icon('info'), 'More Info'),
     el('button', { type: 'button', onclick: () => logout() }, icon('log-out'), 'Log keluar'));
+  const avatarSlot = el('span', { class: 'avatar-slot' }, avatarNode(me));
   const toggle = el('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': 'false', 'aria-controls': 'vp-menu' },
-    el('span', { class: 'avatar', 'aria-hidden': 'true' }, initials(me.staff.nama)),
+    avatarSlot,
     el('span', { class: 'hi' }, 'Hi, ' + String(me.staff.nama).split(' ')[0]),
     icon('chevron-down'));
   const setOpen = (open) => { menu.hidden = !open; toggle.setAttribute('aria-expanded', String(open)); };
@@ -139,7 +141,86 @@ export function renderHeader(me, crumb = 'Dashboard') {
       el('div', { class: 'vp-nav-slot' }),
       el('div', { class: 'vp-profile' }, toggle, menu)));
   document.body.prepend(header);
+  renderFooter();
   return header;
+}
+
+/** Kaki halaman seluruh PWA (permintaan pemilik 21/11/2026). */
+export function renderFooter() {
+  if (document.querySelector('.vp-footer')) return;
+  document.body.append(el('footer', { class: 'vp-footer' }, '\u00A9 Copyright by Voltake Core'));
+}
+
+/** Avatar: gambar profil jika ada (cache ikut versi), jika tidak huruf awal nama. */
+export function avatarNode(me) {
+  const fallback = () => el('span', { class: 'avatar', 'aria-hidden': 'true' }, initials(me.staff.nama));
+  if (!me.staff.gambar_v) return fallback();
+  const img = el('img', { class: 'avatar', src: '/auth/photo?v=' + encodeURIComponent(me.staff.gambar_v), alt: '' });
+  img.addEventListener('error', () => img.replaceWith(fallback()), { once: true });
+  return img;
+}
+
+/** Potong segi empat di tengah & kecilkan ke 256px JPEG. Pulang base64 (tanpa awalan). */
+async function squarePhoto(file) {
+  if (!/^image\//.test(file.type)) throw new Error('Pilih fail gambar (JPG, PNG, HEIC atau WEBP)');
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = () => reject(new Error('Gambar tidak dapat dibaca')); i.src = url; });
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 256;
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, 256, 256);
+    g.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, 256, 256);
+    return { data: c.toDataURL('image/jpeg', 0.86).split(',')[1], preview: c.toDataURL('image/jpeg', 0.86) };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function postPhoto(body) {
+  const res = await fetch('/auth/photo', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-VP': '1' }, body: JSON.stringify(body) });
+  let d = {};
+  try { d = await res.json(); } catch { /* bukan JSON */ }
+  if (!res.ok) throw new Error(d.error || 'Gagal menyimpan gambar (' + res.status + ')');
+  return d;
+}
+
+/** Modal gambar profil: pilih, pratonton bulat, simpan / buang. done(gambar_v) dipanggil selepas berjaya. */
+export function photoModal(me, done) {
+  let picked = null;
+  const preview = el('div', { class: 'photo-preview' }, avatarNode(me));
+  const input = el('input', { type: 'file', accept: 'image/*', class: 'sr-only', 'aria-label': 'Pilih gambar profil' });
+  const err = el('div', { class: 'alert alert-danger', role: 'alert', hidden: true });
+  input.addEventListener('change', async () => {
+    const f = input.files && input.files[0];
+    input.value = '';
+    if (!f) return;
+    try {
+      picked = await squarePhoto(f);
+      preview.replaceChildren(el('img', { class: 'avatar', src: picked.preview, alt: 'Pratonton' }));
+      err.hidden = true;
+    } catch (e) { err.textContent = e.message; err.hidden = false; }
+  });
+  const actions = [
+    { label: 'Batal', class: 'btn-secondary' },
+    { label: 'Simpan gambar', onClick: ({ close, button }) => busy(button, async () => {
+      if (!picked) { err.textContent = 'Pilih gambar dahulu.'; err.hidden = false; return; }
+      try { const r = await postPhoto({ data: picked.data }); close(); done(r.gambar_v); toast('Gambar profil dikemas kini.', 'success'); } catch (e) { err.textContent = e.message; err.hidden = false; }
+    }) },
+  ];
+  if (me.staff.gambar_v) actions.splice(1, 0, { label: 'Buang gambar', class: 'btn-ghost', onClick: ({ close, button }) => busy(button, async () => {
+    try { await postPhoto({ padam: true }); close(); done(''); toast('Gambar profil dibuang.', 'success'); } catch (e) { err.textContent = e.message; err.hidden = false; }
+  }) });
+  openModal({
+    title: 'Gambar profil',
+    body: el('div', { class: 'stack' }, err,
+      el('div', { class: 'row', style: 'gap:16px' }, preview,
+        el('div', { class: 'stack', style: 'flex:1;min-width:180px' },
+          el('p', { class: 'caption', style: 'margin:0' }, 'Gambar dipotong segi empat dan dikecilkan secara automatik. Hanya anda dan Admin sistem yang mengurus gambar ini.'),
+          el('div', null, el('button', { class: 'btn btn-secondary', type: 'button', onclick: () => input.click() }, icon('camera'), 'Pilih gambar'), input)))),
+    actions,
+  });
 }
 
 /**

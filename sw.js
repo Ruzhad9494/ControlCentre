@@ -3,11 +3,11 @@
 // - navigasi halaman: network dahulu, fallback cache, kemudian /offline.html
 // - fail statik: cache dahulu, kemas kini di belakang (stale-while-revalidate)
 // Naikkan VERSION setiap kali senarai SHELL berubah.
-const VERSION = 'vp-shell-2026-11-21-2';
+const VERSION = 'vp-shell-2026-11-21-3';
 // GWR (/gwr/...) dalam SHELL: digunakan di site tanpa line (F-31), app + barisan offline mesti ada dalam cache.
 const SHELL = [
   '/', '/login/', '/no-access/', '/about/', '/install/', '/admin/', '/offline.html',
-  '/manifest.webmanifest', '/icons/icon-192.png', '/icons/favicon-32.png', '/icons/logo-mark.png',
+  '/manifest.webmanifest?v=2', '/icons/icon-192.png?v=2', '/icons/favicon-32.png?v=2', '/icons/logo-mark.png',
   '/shared/ui/voltake.css', '/shared/ui/components.js', '/shared/ui/icons.svg',
   '/shared/ui/fonts/manrope-latin-400-normal.woff2', '/shared/ui/fonts/manrope-latin-500-normal.woff2',
   '/shared/ui/fonts/manrope-latin-600-normal.woff2', '/shared/ui/fonts/manrope-latin-700-normal.woff2',

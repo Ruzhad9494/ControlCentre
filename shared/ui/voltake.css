@@ -425,3 +425,11 @@ main > .module-nav { display: flex; width: max-content; margin: 0 0 var(--sp-4);
   .vp-nav-slot { flex: 0 0 0; min-width: 0; }
 }
 @media (min-width: 900px) and (max-width: 1199px) { .vp-header.has-nav .vp-crumb { display: none; } }
+
+/* ------------------------------------------------------------ gambar profil + kaki halaman (21/11/2026) */
+img.avatar { object-fit: cover; background: var(--mist); }
+.avatar-slot { display: inline-flex; flex: none; }
+.photo-preview .avatar { width: 96px; height: 96px; font-size: 30px; box-shadow: 0 6px 18px rgba(11, 23, 52, .15); }
+.vp-footer { text-align: center; color: var(--muted); font-size: 13px; font-weight: 600; padding: var(--sp-4) var(--gutter) calc(var(--sp-5) + env(safe-area-inset-bottom)); }
+.login-page .vp-footer { position: relative; z-index: 1; color: rgba(255, 255, 255, .55); margin-top: -40px; }
+.center-page .vp-footer { padding-top: 0; }
