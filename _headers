@@ -28,3 +28,7 @@
 
 /shared/ui/fonts/*
   Cache-Control: public, max-age=31536000, immutable
+
+/public/gwr-sign/*
+  Referrer-Policy: no-referrer
+  Cache-Control: no-cache

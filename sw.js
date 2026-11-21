@@ -3,7 +3,8 @@
 // - navigasi halaman: network dahulu, fallback cache, kemudian /offline.html
 // - fail statik: cache dahulu, kemas kini di belakang (stale-while-revalidate)
 // Naikkan VERSION setiap kali senarai SHELL berubah.
-const VERSION = 'vp-shell-2026-11-19-1';
+const VERSION = 'vp-shell-2026-11-21-1';
+// GWR (/gwr/...) dalam SHELL: digunakan di site tanpa line (F-31), app + barisan offline mesti ada dalam cache.
 const SHELL = [
   '/', '/login/', '/no-access/', '/about/', '/install/', '/admin/', '/offline.html',
   '/manifest.webmanifest', '/icons/icon-192.png', '/icons/favicon-32.png',
@@ -13,6 +14,7 @@ const SHELL = [
   '/shared/lib/api.js', '/shared/lib/escape.js', '/shared/lib/format.js', '/shared/lib/privacy.js', '/shared/lib/page.js',
   '/assets/dashboard.js', '/assets/login.js', '/assets/no-access.js', '/assets/about.js', '/assets/install.js',
   '/assets/admin.js', '/assets/offline.js',
+  '/gwr/', '/gwr/app.js', '/gwr/outbox.js', '/gwr/gwr.css', '/shared/lib/fileprep.js', '/shared/lib/signature.js',
 ];
 const NETWORK_ONLY = /^\/(api|auth|public\/api)\//;
 

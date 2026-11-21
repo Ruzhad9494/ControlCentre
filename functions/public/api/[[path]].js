@@ -1,7 +1,7 @@
 // /public/api/* - gateway borang awam tanpa login (TRD 5.2, 6; AFD S-10, S-34; IPD 2E.2).
 //
 //   GET  /public/api/config                 -> { turnstile_site_key }
-//   POST /public/api/<modul>/<action>        -> hanya action dalam PUBLIC_ACTIONS
+//   POST /public/api/<modul>/<action>        -> hanya action dalam PUBLIC_ACTIONS (hr: borang mohon; gwr: tandatangan klien)
 //
 // 1. Senarai action tetap (whitelist). Lain = 404.
 // 2. CSRF: Origin sama + header X-VP (borang dihidang dari laman yang sama).
@@ -21,6 +21,11 @@ export const PUBLIC_ACTIONS = {
   hr: {
     listOpenPositions: { write: false },
     submitApplication: { write: true },
+  },
+  gwr: {
+    getSignRequest: { write: false },   // token 32 bait dalam payload; Turnstile tak perlu untuk baca
+    getSignPdf: { write: false },
+    clientApprove: { write: true },
   },
 };
 export const WRITE_LIMIT = 10;      // 10 hantaran / 10 minit / IP (TRD 5 jadual keselamatan)

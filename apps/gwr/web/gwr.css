@@ -1,0 +1,45 @@
+/* GWR - tambahan kecil atas shared/ui/voltake.css */
+.gw-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.gw-stat { display: block; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); color: inherit; text-decoration: none; }
+.gw-stat:hover { border-color: var(--solar-blue); }
+.gw-stat .label { font-size: 13px; color: var(--muted); }
+.gw-stat .v { font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.gw-stat.ok { border-left-color: var(--success); }
+.gw-stat.warn { border-left-color: var(--warning); }
+.gw-stat.bad { border-left-color: var(--danger); }
+.gw-filters { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.gw-filters > * { min-width: 0; }
+.gw-list { display: grid; gap: var(--sp-3); }
+.gw-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: var(--sp-4); }
+.gw-card .top { display: flex; justify-content: space-between; gap: var(--sp-3); align-items: flex-start; flex-wrap: wrap; }
+.gw-card .meta { color: var(--muted); font-size: 13px; }
+.gw-card .desc { margin: var(--sp-1) 0; overflow-wrap: anywhere; }
+.gw-form { display: grid; gap: var(--sp-4); max-width: 760px; }
+.gw-sec { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--sp-4); display: grid; gap: var(--sp-3); }
+.gw-sec h3 { margin: 0; font-size: 17px; }
+.gw-grid { display: grid; gap: var(--sp-3); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.gw-grid > * { min-width: 0; }
+.gw-grid .full { grid-column: 1 / -1; }
+@media (max-width: 599px) { .gw-grid { grid-template-columns: minmax(0, 1fr); } }
+.gw-row { border: 1px dashed var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); display: grid; gap: var(--sp-2); }
+.gw-man { grid-template-columns: minmax(0, 1.2fr) 80px minmax(0, 2fr) auto; align-items: center; }
+@media (max-width: 599px) { .gw-man { grid-template-columns: minmax(0, 1fr) 80px auto; } .gw-man > input:nth-child(3) { grid-column: 1 / -1; grid-row: 2; } }
+.gw-num { font-weight: 700; min-width: 20px; }
+.gw-mini { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; }
+.gw-thumbs { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.gw-thumbs figure { margin: 0; }
+.gw-thumbs img { width: 100%; border-radius: 6px; border: 1px solid var(--border); }
+.gw-thumbs figcaption { font-size: 13px; color: var(--muted); }
+.gw-link { background: var(--mist); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-2) var(--sp-3); overflow-wrap: anywhere; font-family: ui-monospace, monospace; font-size: 13px; }
+.gw-outbox { background: rgba(180, 83, 9, .07); border: 1px solid rgba(180, 83, 9, .4); border-radius: var(--radius-card); padding: var(--sp-3); }
+.gw-progress { background: var(--mist); border-radius: var(--radius-ctl); padding: var(--sp-2) var(--sp-3); font-size: 14px; }
+.file-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.file-list li { display: flex; align-items: center; gap: var(--sp-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: 4px 4px 4px 10px; min-height: var(--tap); flex-wrap: wrap; }
+.file-list li .grow { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; }
+.file-list li .grow .input { width: 100%; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px var(--sp-4); margin: 0; }
+.kv dt { color: var(--muted); font-size: 13px; padding-top: 2px; }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 479px) { .kv { grid-template-columns: 1fr; } .kv dd { margin-bottom: var(--sp-2); } }
+.num { font-variant-numeric: tabular-nums; }
+.gw-btns { display: flex; margin-left: auto; white-space: nowrap; }

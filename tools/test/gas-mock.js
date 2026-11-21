@@ -102,7 +102,11 @@ class MockSpreadsheet {
 const fromJava = (arr) => Buffer.from(Array.from(arr, (b) => (b + 256) % 256));
 
 class MockBlob {
-  constructor(bytes, mime, name) { this.bytes = Array.from(bytes); this.mime = mime; this.name = name; }
+  constructor(bytes, mime, name) { this.bytes = typeof bytes === 'string' ? toJavaBytes(Buffer.from(bytes, 'utf8')) : Array.from(bytes); this.mime = mime; this.name = name; }
+  /** Tukar HTML ke "PDF" ujian: %PDF- + HTML asal, supaya ujian boleh semak kandungan. */
+  getAs(mime) { return new MockBlob(toJavaBytes(Buffer.concat([Buffer.from('%PDF-1.4 MOCK\n'), fromJava(this.bytes)])), mime, this.name); }
+  setName(n) { this.name = n; return this; }
+  getDataAsString() { return fromJava(this.bytes).toString('utf8'); }
   getBytes() { return this.bytes; }
   getContentType() { return this.mime; }
   getName() { return this.name; }
@@ -200,6 +204,7 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
       Charset: { UTF_8: 'utf8' },
       computeDigest: (alg, text) => toJavaBytes(nodeCrypto.createHash(alg).update(String(text), 'utf8').digest()),
       newBlob: (bytes, mime, name) => new MockBlob(bytes, mime, name),
+      getUuid: () => nodeCrypto.randomUUID(),
       base64Decode: (str) => toJavaBytes(Buffer.from(String(str), 'base64')),
       base64Encode: (bytes) => fromJava(bytes).toString('base64'),
       computeHmacSha256Signature: (value, key) =>

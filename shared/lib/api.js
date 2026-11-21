@@ -99,6 +99,6 @@ export async function logout() {
   try {
     await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin', headers: { 'X-VP': '1' } });
   } catch { /* tetap ke login */ }
-  try { sessionStorage.clear(); } catch { /* abaikan */ }
+  try { sessionStorage.clear(); localStorage.removeItem('vp-gwr-ctx'); } catch { /* abaikan */ }
   location.assign('/login/?keluar=1');
 }

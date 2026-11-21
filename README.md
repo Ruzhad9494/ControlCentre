@@ -16,7 +16,8 @@ Reka bentuk penuh dalam [`docs/`](docs/): PRD, TRD, AFD, DBD, BSD, IPD. Pelan pe
 | 2C AMS | Kod siap: ikut sistem AMS lama (papan pemuka, kalibrasi, audit bulanan, troli mobiliti), import MASTERLIST. Langkah manual: [`docs/setup-fasa2c.md`](docs/setup-fasa2c.md) |
 | 2D Compliance Track | Kod siap: ikut sistem UniTrack lama (dashboard, kenderaan, chargeman, sijil staf, Sijil saya + IC, Senarai Kerja). Langkah manual: [`docs/setup-fasa2d.md`](docs/setup-fasa2d.md) |
 | 2E Draft Mohon Kerja | Kod siap: borang awam `/public/mohon/` (Turnstile, notis privasi), dashboard HR, papan interviewer + markah, retention. Langkah manual: [`docs/setup-fasa2e.md`](docs/setup-fasa2e.md) |
-| 2F-2H Modul | Belum mula |
+| 2F GWR | Kod siap: satu modul OMP + PSS ikut GWR v4.2 lama, borang offline, pautan tandatangan klien `/public/gwr-sign/` (sekali guna, luput 7 hari), PDF di server, dashboard. Langkah manual: [`docs/setup-fasa2f.md`](docs/setup-fasa2f.md) |
+| 2G-2H Modul | Belum mula |
 
 Keputusan pemilik (20/11/2026): mulai Fasa 2A, setiap modul disetup terus ke **production** (tiada Sheet/Apps Script staging). Ujian dibuat dengan data sebenar sebelum modul dibuka kepada semua (`Modules.status = aktif`).
 

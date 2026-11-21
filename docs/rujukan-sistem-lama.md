@@ -167,3 +167,36 @@ Sumber: `Ruzhad9494/draftmohonkerja` (`appscript/Code.gs`, `index.html`, `dashbo
 | Tiada markah interview | Interviewer beri markah 1-5 (5 kriteria) + cadangan | PRD F-12 |
 | Tiada emel | HR dimaklumkan bila permohonan baru (no. rujukan sahaja) | Ringkas, tiada data peribadi dalam emel |
 
+
+## GWR (OMP + PSS): lama vs baharu
+
+Sumber: `voltake-energy/gwrompnew` dan `Ruzhad9494/gwrpss` (GWR v4.2: `Appscript/Code.gs`, `index.html`, `Approval.html`, `dashboard/`), dibaca 21/11/2026. Kod kedua-dua repo sama kecuali nama department, Sheet dan folder, jadi digabung menjadi satu modul dengan medan `dept`.
+
+### Peraturan yang DIBAWA sama
+
+| Sistem lama | Dalam sistem baharu |
+|---|---|
+| Maklumat projek: tarikh, PO, quotation, MOS, klien, tajuk projek, lokasi, PIC klien + telefon | Sama |
+| Hanya manager & engineer (OMP: supervisor) isi maklumat projek; technician tak boleh | Sama (`supervisor`, `engineer`, `chargeman`, `manager`) |
+| Time in / out, PTW, job description berbilang baris dengan remark + tanda SHUTDOWN LV/MV, unresolved issue | Sama |
+| Manpower "Jawatan \| Pax \| Nama" (Technician, Engineer, Chargeman) | Sama (+ Supervisor), pax dikira dari nama |
+| Gambar dikecilkan sebelum naik, disusun, 6 setiap muka PDF | Sama (susun dengan butang naik / turun) |
+| Barisan offline IndexedDB, gambar naik 3 sekali, `clientReqId` anti-ulangan | Sama |
+| Pautan klien + templat WhatsApp "Berikut merupakan Ground Work Report Form \| ..." ke wa.me/6<no> | Sama |
+| Klien isi nama, jawatan, telefon, emel + tandatangan | Sama |
+| Nama PDF `<Lokasi>_<Klien>_<DDMMYYYY>_<Draft\|Final>.pdf`, PDF A4: projek, pengesahan, gambar | Sama |
+| Dashboard: KPI jumlah / selesai / belum / isu, senarai isu, prestasi staf | Sama |
+| Report Approved dikunci | Sama (Disahkan / Dibatalkan) |
+
+### Yang DIUBAH (dan kenapa)
+
+| Sistem lama | Kini | Sebab |
+|---|---|---|
+| Identiti staf ditaip + StaffToken dalam pelayar | Dari login portal | Elak menyamar |
+| Token kelulusan mentah dalam Sheet, tiada luput, boleh guna berulang | Hash SHA-256, sekali guna, luput 7 hari, Turnstile + had kadar | PRD F-32 |
+| PDF draf & final dijana di pelayar (final oleh pelayar klien) | Dijana di server dari data Sheet | PDF tak boleh dipalsukan |
+| Gambar & PDF "anyone with link" | Fail peribadi, dibuka melalui portal / pautan token | PDPA |
+| Dua sistem berasingan (OMP, PSS) | Satu modul, skop department di server | Satu kod untuk dijaga |
+| Report Pending diubah tanpa kesan | Ubah = kembali Draf, pautan lama mati | Klien tak sign versi lama |
+| Tiada emel selepas lulus | PDF final dihantar ke klien, staf dan `emel_cc_<dept>` | PRD F-34 |
+| Tiada pembatalan | Manager batalkan dengan sebab (rekod disimpan) | Jejak audit |

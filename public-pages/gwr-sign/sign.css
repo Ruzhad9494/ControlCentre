@@ -1,0 +1,19 @@
+/* Halaman awam tandatangan klien GWR (S-34) */
+.gs-top { background: var(--navy); color: #fff; padding: 14px 0; }
+.gs-top .container { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.gs-top .brand { letter-spacing: 1px; }
+.gs-top .caption { color: rgba(255, 255, 255, .8); }
+.gs-wrap { display: grid; gap: var(--sp-4); max-width: 720px; margin: 0 auto; }
+.gs-sec { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--sp-4); display: grid; gap: var(--sp-3); }
+.gs-sec h2 { font-size: 18px; margin: 0; }
+.gs-grid { display: grid; gap: var(--sp-3); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.gs-grid > * { min-width: 0; }
+@media (max-width: 599px) { .gs-grid { grid-template-columns: minmax(0, 1fr); } }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px var(--sp-4); margin: 0; }
+.kv dt { color: var(--muted); font-size: 13px; padding-top: 2px; }
+.kv dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 479px) { .kv { grid-template-columns: 1fr; } .kv dd { margin-bottom: var(--sp-2); } }
+.gs-jobs { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.gs-jobs li { overflow-wrap: anywhere; }
+.gs-sd { color: var(--danger); font-weight: 700; }
+.gs-done { text-align: center; padding: var(--sp-6) var(--sp-4); }

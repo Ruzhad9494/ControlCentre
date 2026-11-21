@@ -104,7 +104,7 @@ Task khusus:
 - [ ] 2E.3 HR S-12 hingga S-15; masking IC untuk interviewer; trigger retention (F-11 hingga F-14)
 - [ ] 2F.1 GWR S-30 hingga S-33 satu codebase, `dept` dari sesi; offline queue IndexedDB + `client_req_id` (F-30, F-31, F-33)
 - [ ] 2F.2 S-34 tandatangan klien: token 32 byte, simpan hash, sekali guna, luput 7 hari (F-32)
-- [ ] 2F.3 Jana PDF draf/final dari template Docs ikut dept; emel (F-34)
+- [ ] 2F.3 Jana PDF draf/final dari template Docs ikut dept; emel (F-34). Dibina: HTML ikut susun atur PDF sistem lama ditukar ke PDF oleh Google (tiada template Docs untuk dijaga), kepala ikut dept dari Settings
 - [ ] 2G.1 ClaimReport untuk Strategic Planning: S-70, S-71; jana PDF + XLSX dari tab Template; soft delete admin (F-70 hingga F-72)
 - [ ] 2H.1 Voltrack S-80 hingga S-82, 5 role (commercial = Commercial; operation = manager PSS & OMP; claim = HR; lod = HR & Account; admin per individu); `ROLE_WRITE_ACCESS` ikut fasa; `gwr_report_ids` (F-80 hingga F-85)
 

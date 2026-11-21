@@ -228,6 +228,23 @@ export function setupHrGas({ settings = {} } = {}) {
   return gas;
 }
 
+// ---------------------------------------------------------------- Apps Script gwr sebenar
+export const GWR_DIR = path.join(ROOT, 'apps', 'gwr', 'gas');
+export const GWR_SECRET = 'g'.repeat(48);
+
+export function setupGwrGas({ settings = {} } = {}) {
+  const gas = loadGas(createGas({
+    props: { SPREADSHEET_ID: 'gwr-sheet', ROOT_FOLDER_ID: 'gwr-root', ENV: 'prod', MODULE_SECRET: GWR_SECRET },
+    spreadsheetName: 'VP-GWR',
+  }), GWR_DIR);
+  gas.ctx.setupSystem();
+  const sh = gas.spreadsheet.getSheetByName('Settings');
+  const h = sh.header();
+  const want = { portal_url: 'https://cc.example.test', emel_cc_PSS: 'pss-mgr@example.test', emel_cc_OMP: 'omp-mgr@example.test', ...settings };
+  sh.data.forEach((r, i) => { if (i > 0 && r[0] in want) r[h.indexOf('value')] = want[r[0]]; });
+  return gas;
+}
+
 // PNG 1x1 sah (isi sebenar, supaya semakan magic bytes lulus)
 export const PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==';
 export const PDF_B64 = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF').toString('base64');
