@@ -47,7 +47,7 @@ var KEADAAN_AKHIR = ['Baik', 'Rosak', 'Hilang komponen'];                 // app
 var MOVEMENT_STATUS = ['Dipinjam', 'Menunggu pengesahan', 'Selesai'];
 
 var SETTINGS_SEED = [
-  ['portal_url', '', 'Alamat portal untuk pautan dalam emel, contoh https://cc.voltake.com'],
+  ['portal_url', '', 'Alamat portal untuk pautan dalam emel, contoh https://portal.voltake.com'],
   ['admin_notify_emails', '', 'Emel admin aset (pisah dengan koma): pemulangan menunggu pengesahan + laporan Isnin'],
   ['amaran_kalibrasi_hari', '30', 'Kalibrasi tamat dalam N hari dikira "hampir luput" (sistem lama: Lagi Sebulan = 30)'],
   ['sekat_pinjam_luput', 'TRUE', 'TRUE = aset yang kalibrasinya dah luput tak boleh dipinjam (PRD F-41)']

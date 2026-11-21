@@ -44,7 +44,7 @@ var TYPE_SEED = [
 var TYPE_ALIASES = { 'Makan & Minum': ['Makan & Minuman', 'Makan'] };
 
 var SETTINGS_SEED = [
-  ['portal_url', '', 'Alamat portal untuk pautan dalam emel, contoh https://cc.voltake.com'],
+  ['portal_url', '', 'Alamat portal untuk pautan dalam emel, contoh https://portal.voltake.com'],
   ['admin_notify_emails', '', 'Emel penerima "tuntutan baru" & "beza bayaran" (pisah dengan koma). Contoh peti emel HR'],
   ['head_report_email', '', 'Penerima laporan bulanan beza bayaran (Head of HR)'],
   ['reminder_hari', '14', 'Peringatan emel kepada staf bila claim Lulus belum disahkan selepas N hari'],

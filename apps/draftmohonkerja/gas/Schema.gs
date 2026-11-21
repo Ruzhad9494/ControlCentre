@@ -52,7 +52,7 @@ var SCHEMA = {
 var CONSENT_VERSION = 'PN-HR-2026-11';
 
 var SETTINGS_SEED = [
-  ['portal_url', '', 'Alamat portal untuk pautan dalam emel, contoh https://cc.voltake.com'],
+  ['portal_url', '', 'Alamat portal untuk pautan dalam emel, contoh https://portal.voltake.com'],
   ['hr_notify_emails', '', 'Emel HR yang dimaklumkan bila ada permohonan baru (pisah dengan koma)'],
   ['retention_bulan', '12', 'Pemohon Ditolak / Tarik diri dianonimkan selepas N bulan (PRD Q-05: 12 bulan)'],
   ['benarkan_jawatan_lain', 'TRUE', 'TRUE = pemohon boleh taip jawatan sendiri jika tiada dalam senarai (sistem lama: "Taip Jawatan Anda")'],

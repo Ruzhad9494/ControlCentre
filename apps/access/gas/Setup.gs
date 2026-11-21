@@ -54,6 +54,8 @@ function setupSystem() {
     report.push(name + (created ? ' (baru)' : '') + (missing.length && !created ? ' +' + missing.join(',') : '') + (seeded ? ' seed=' + seeded : ''));
   });
 
+  var addedKeys = ensureSettingsKeys_(ss);
+  if (addedKeys.length) report.push('Settings +' + addedKeys.join(','));
   formatTextColumns_(ss);
   ensureCounters_(ss);
   ensureFolders_();
@@ -98,6 +100,22 @@ function ensureTriggers_() {
   if (!exists) {
     ScriptApp.newTrigger(INACTIVE_REPORT_HANDLER).timeBased().onMonthDay(1).atHour(8).create();
   }
+  ensureBackupTrigger_();   // Backup.gs: Ahad 2:00 pagi (BSD 8)
+}
+
+/** Tambah kunci Settings baru (versi kod lebih baru) tanpa sentuh nilai sedia ada. */
+function ensureSettingsKeys_(ss) {
+  var sh = ss.getSheetByName('Settings');
+  if (!sh || sh.getLastRow() < 1) return [];
+  var t = readTable_(sh);
+  var have = t.rows.map(function (r) { return String(r.key); });
+  var added = [];
+  SETTINGS_SEED.forEach(function (row) {
+    if (have.indexOf(row[0]) >= 0) return;
+    appendObj_(sh, t.header, { key: row[0], value: row[1], nota: row[2] });
+    added.push(row[0]);
+  });
+  return added;
 }
 
 function applyValidation_(ss) {

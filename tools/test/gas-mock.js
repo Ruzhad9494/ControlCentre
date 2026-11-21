@@ -105,6 +105,7 @@ class MockSpreadsheet {
   getId() { return this.id; }
   deleteSheet(sh) { this.sheets.delete(sh.name); }
   getSheetByName(n) { return this.sheets.get(n) || null; }
+  getSheets() { return [...this.sheets.values()]; }
   insertSheet(n) {
     if (this.sheets.has(n)) throw new Error('Sheet wujud: ' + n);
     const s = new MockSheet(n); this.sheets.set(n, s); return s;
@@ -124,25 +125,45 @@ class MockBlob {
   getName() { return this.name; }
 }
 
-class MockFile {
-  constructor(id, blob) { this.id = id; this.blob = blob; this.trashed = false; }
+const iter = (arr) => { let i = 0; return { hasNext: () => i < arr.length, next: () => arr[i++] }; };
+
+/** Perkongsian Drive (audit IPD 3.2): lalai PRIVATE, pemilik = akaun sistem. */
+class Sharing {
+  initSharing() { this.access = 'PRIVATE'; this.permission = 'NONE'; this.editors = []; this.viewers = []; this.owner = 'systems@voltake.com'; }
+  getSharingAccess() { return this.access; }
+  getSharingPermission() { return this.permission; }
+  setSharing(a, p) { this.access = a; this.permission = p; return this; }
+  getOwner() { return { getEmail: () => this.owner }; }
+  getEditors() { return this.editors.map((e) => ({ getEmail: () => e })); }
+  getViewers() { return this.viewers.map((e) => ({ getEmail: () => e })); }
+}
+
+class MockFile extends Sharing {
+  constructor(id, blob) { super(); this.initSharing(); this.id = id; this.blob = blob; this.trashed = false; }
   getId() { return this.id; }
   getName() { return this.blob.name; }
   getBlob() { return this.blob; }
   getMimeType() { return this.blob.mime; }
   setTrashed(v) { this.trashed = v; return this; }
+  isTrashed() { return this.trashed; }
+  makeCopy(name, folder) {
+    const f = folder.createFile(new MockBlob(this.blob.bytes, this.blob.mime, name));
+    f.copyOf = this.id;
+    return f;
+  }
 }
 
-class MockFolder {
-  constructor(drive, id, name) { this.drive = drive; this.id = id; this.name = name; this.folders = []; this.files = []; }
+class MockFolder extends Sharing {
+  constructor(drive, id, name, parent = null) { super(); this.initSharing(); this.drive = drive; this.id = id; this.name = name; this.folders = []; this.files = []; this.parent = parent; this.trashed = false; }
   getId() { return this.id; }
   getName() { return this.name; }
-  getFoldersByName(n) {
-    const hit = this.folders.filter((f) => f.name === n);
-    let i = 0;
-    return { hasNext: () => i < hit.length, next: () => hit[i++] };
-  }
-  createFolder(n) { const f = new MockFolder(this.drive, 'fld-' + (++this.drive.seq), n); this.folders.push(f); this.drive.byId.set(f.id, f); return f; }
+  getParents() { return iter(this.parent ? [this.parent] : []); }
+  getFolders() { return iter(this.folders.filter((f) => !f.trashed)); }
+  getFiles() { return iter(this.files.filter((f) => !f.trashed)); }
+  getFilesByName(n) { return iter(this.files.filter((f) => !f.trashed && f.getName() === n)); }
+  setTrashed(v) { this.trashed = v; return this; }
+  getFoldersByName(n) { return iter(this.folders.filter((f) => !f.trashed && f.name === n)); }
+  createFolder(n) { const f = new MockFolder(this.drive, 'fld-' + (++this.drive.seq), n, this); this.folders.push(f); this.drive.byId.set(f.id, f); return f; }
   createFile(blob) { const f = new MockFile('file-' + (++this.drive.seq), blob); this.files.push(f); this.drive.files.set(f.id, f); return f; }
 }
 
@@ -155,6 +176,7 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
   const cacheStore = new Map();
   const counters = { openById: 0 };
   const drive = { seq: 0, byId: new Map(), files: new Map(), temps: new Map() };
+  drive.root = new MockFolder(drive, 'my-drive', 'My Drive');
   const fetches = [];
   let lockHeld = false;
 
@@ -170,6 +192,7 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
     SpreadsheetApp: {
       openById: (id) => {
         counters.openById++;
+        if (drive.temps.has(id)) return drive.temps.get(id);
         if (id !== store.SPREADSHEET_ID) throw new Error('Spreadsheet tak dijumpai: ' + id);
         return spreadsheet;
       },
@@ -193,15 +216,22 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
       },
     },
     DriveApp: {
+      Access: { PRIVATE: 'PRIVATE', ANYONE: 'ANYONE', ANYONE_WITH_LINK: 'ANYONE_WITH_LINK', DOMAIN: 'DOMAIN', DOMAIN_WITH_LINK: 'DOMAIN_WITH_LINK' },
+      Permission: { NONE: 'NONE', VIEW: 'VIEW', EDIT: 'EDIT', COMMENT: 'COMMENT' },
+      getRootFolder: () => drive.root,
       getFolderById: (id) => {
         if (id !== store.ROOT_FOLDER_ID && !drive.byId.has(id)) throw new Error('Folder tak dijumpai');
-        if (!drive.byId.has(id)) drive.byId.set(id, new MockFolder(drive, id, 'VP-Files'));
-        return drive.byId.get(id);
+        if (!drive.byId.has(id)) { const f = new MockFolder(drive, id, 'VP-Files', drive.root); drive.root.folders.push(f); drive.byId.set(id, f); }
+        const f = drive.byId.get(id);
+        if (f.trashed) throw new Error('Folder dalam Trash');
+        return f;
       },
       getFileById: (id) => {
+        if (id === store.SPREADSHEET_ID && !drive.files.has(id)) drive.files.set(id, new MockFile(id, new MockBlob('', 'application/vnd.google-apps.spreadsheet', spreadsheetName)));
         if (!drive.files.has(id)) throw new Error('Fail tak dijumpai: ' + id);
         return drive.files.get(id);
       },
+      getFilesByName: (n) => iter([...drive.files.values()].filter((f) => f.getName() === n)),
     },
     // Eksport Sheets (ClaimReport): "PDF"/"XLSX" ujian = JSON isi tab yang dieksport, supaya ujian boleh semak
     UrlFetchApp: {
@@ -267,7 +297,7 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
     MailApp: { sendEmail: (m) => mails.push(m) },
   };
   vm.createContext(ctx);
-  return { ctx, store, spreadsheet, triggers, mails, logs, cacheStore, counters, drive, fetches };
+  return { ctx, store, spreadsheet, triggers, mails, logs, cacheStore, counters, drive, fetches, MockFile, MockBlob };
 }
 
 function loadGas(gas, dir) {

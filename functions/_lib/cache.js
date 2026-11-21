@@ -1,7 +1,7 @@
 // functions/_lib/cache.js - simpanan sementara guna Cache API (TRD 5.2, 5.3, 6 #5).
 //
 // Nota: Cache API Cloudflare adalah PER DATA CENTER dan TIDAK berfungsi pada
-// domain *.pages.dev (tiada kesan). Di cc.voltake.com ia berfungsi. Semua kod
+// domain *.pages.dev (tiada kesan). Di domain sendiri (contoh portal.voltake.com) ia berfungsi. Semua kod
 // yang guna fail ni mesti tetap betul walaupun cache sentiasa kosong.
 
 const BASE = 'https://vp-cache.internal/';

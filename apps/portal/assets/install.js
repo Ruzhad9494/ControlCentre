@@ -4,22 +4,25 @@ import { icon, registerSW, toast } from '/shared/ui/components.js';
 
 registerSW();
 
+// Alamat sebenar (portal.voltake.com / pages.dev / staging) supaya panduan tak perlu ubah bila domain bertukar.
+const HOST = location.host;
+
 const GUIDES = [
   ['iPhone / iPad (Safari, iOS 16.4 ke atas)', 'smartphone', [
-    'Buka cc.voltake.com dalam Safari (bukan Chrome atau app WhatsApp).',
+    `Buka ${HOST} dalam Safari (bukan Chrome atau app WhatsApp).`,
     ['Tekan butang Share ', icon('share'), ' di bawah skrin.'],
     ['Skrol dan pilih "Add to Home Screen" ', icon('square-plus'), '.'],
     'Tekan "Add". Ikon Voltake muncul di skrin utama.',
     'Buka dari ikon itu dan log masuk sekali lagi (app di iPhone simpan login berasingan dari Safari).',
   ]],
   ['Android (Chrome)', 'smartphone', [
-    'Buka cc.voltake.com dalam Chrome.',
+    `Buka ${HOST} dalam Chrome.`,
     ['Tekan menu ', icon('ellipsis-vertical'), ' di atas kanan.'],
     'Pilih "Install app" atau "Add to Home screen", kemudian "Install".',
     'Buka Voltake dari skrin utama atau senarai app.',
   ]],
   ['Komputer (Chrome atau Edge)', 'monitor', [
-    'Buka cc.voltake.com.',
+    `Buka ${HOST}.`,
     ['Tekan ikon install ', icon('download'), ' di hujung kanan bar alamat, atau menu > "Install Voltake".'],
     'Voltake dibuka dalam tetingkap sendiri dan boleh dipin ke taskbar.',
   ]],

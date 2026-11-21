@@ -109,12 +109,12 @@ Task khusus:
 - [ ] 2H.1 Voltrack S-80 hingga S-82, 5 role (commercial = Commercial; operation = manager PSS & OMP; claim = HR; lod = HR & Account; admin per individu); `ROLE_WRITE_ACCESS` ikut fasa; `gwr_report_ids` (F-80 hingga F-85). Dibina: medan dikira di server + trigger harian, emel tunggakan, import projek terbuka / semua
 
 ### Fasa 3 - Pengerasan & tutup
-- [ ] 3.1 Jalankan semula semua ujian seksyen 6 merentas modul
-- [ ] 3.2 Semak semua folder Drive: tiada "anyone with link" untuk data peribadi
-- [ ] 3.3 Archive 9 repo lama di GitHub (kekal private, read-only)
-- [ ] 3.4 Tulis `docs/runbook.md`: onboard staf (daftar emel Gmail), offboard, tukar emel/akaun hilang (dengan pengesahan identiti), tambah modul, rotate secret, pulih dari backup
+- [ ] 3.1 Jalankan semula semua ujian seksyen 6 merentas modul. Dibina: 159 unit test + e2e setiap modul lulus 21/11/2026; senarai semak go-live manual dalam `docs/setup-fasa3.md` langkah 6
+- [ ] 3.2 Semak semua folder Drive: tiada "anyone with link" untuk data peribadi. Dibina: `semakPerkongsian` / `semakPerkongsianBetulkan` dalam `access` (Backup.gs), juga backup mingguan BSD 8 (`weeklyBackup`) yang belum ada sebelum ini
+- [ ] 3.3 Archive 9 repo lama di GitHub (kekal private, read-only). Tindakan pemilik: `docs/setup-fasa3.md` langkah 4
+- [ ] 3.4 Tulis `docs/runbook.md`: onboard staf (daftar emel Gmail), offboard, tukar emel/akaun hilang (dengan pengesahan identiti), tambah modul, rotate secret, pulih dari backup. Dibina, termasuk domain sendiri (Wix DNS + Cloudflare Pages)
 - [ ] 3.5 (Tambahan, jika diluluskan) F-07 OneSignal di portal; F-08 dashboard KPI + action `summary` setiap modul
-- [ ] 3.6 Nilai semula keperluan Supabase ikut kriteria TRD 7 (Q-10)
+- [ ] 3.6 Nilai semula keperluan Supabase ikut kriteria TRD 7 (Q-10). Dibina: `docs/penilaian-supabase.md` (kekal Sheets, nilai semula Feb 2027) + `laporanSaizData`
 
 ## 6. Pelan Testing
 

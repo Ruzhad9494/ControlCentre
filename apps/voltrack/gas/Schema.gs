@@ -41,7 +41,7 @@ var DATE_FIELDS = ['date_request', 'date_proceed', 'presentation_date', 'date_st
 var DERIVED = ['status_job', 'followup_1', 'followup_2', 'followup_3', 'payment_due_date', 'overdue_days', 'lod_reminder_sent', 'lod_issue'];
 
 var SETTINGS_SEED = [
-  ['portal_url', '', 'Alamat portal, contoh https://cc.voltake.com (pautan dalam emel)'],
+  ['portal_url', '', 'Alamat portal, contoh https://portal.voltake.com (pautan dalam emel)'],
   ['emel_peringatan', '', 'Emel ringkasan tunggakan harian (sistem lama: push OneSignal kepada LOD & Admin), pisah koma'],
   ['tempoh_bayaran_hari', '30', 'Payment due = invoice date + N hari (sistem lama: 30)']
 ];

@@ -61,7 +61,8 @@ var SETTINGS_SEED = [
   ['it_contact', '', 'Emel/telefon untuk skrin "Tiada akses" (S-03)'],
   ['hr_report_email', '', 'Penerima laporan bulanan staf aktif tak login > 60 hari'],
   ['inactive_days', '60', 'Ambang hari untuk laporan staf tak aktif'],
-  ['privacy_notice_version', '', 'Versi notis privasi pekerja (Fasa 1, task 1.16)']
+  ['privacy_notice_version', '', 'Versi notis privasi pekerja (Fasa 1, task 1.16)'],
+  ['backup_report_email', '', 'Penerima emel jika backup mingguan Ahad ada masalah (kosong = hr_report_email)']
 ];
 
 /** Bina baris ikut susunan header dari objek {lajur: nilai}. */

@@ -106,7 +106,7 @@ test('idempotent: jalan 3 kali tiada seed/trigger pendua, data sedia ada tak dis
   assert.equal(staff.rows().length, 1);
   assert.equal(staff.rows()[0].nama, 'Nama Diubah Manual');
   assert.equal(gas.spreadsheet.getSheetByName('Modules').rows().length, 8);
-  assert.equal(gas.spreadsheet.getSheetByName('Settings').rows().length, 5);
+  assert.equal(gas.spreadsheet.getSheetByName('Settings').rows().length, 6);
   assert.equal(gas.triggers.filter((t) => t.handler === 'monthlyInactiveReport').length, 1);
 });
 

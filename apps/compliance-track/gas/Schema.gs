@@ -36,7 +36,7 @@ var SCHEMA = {
 };
 
 var SETTINGS_SEED = [
-  ['portal_url', '', 'Alamat portal untuk pautan dalam emel, contoh https://cc.voltake.com'],
+  ['portal_url', '', 'Alamat portal untuk pautan dalam emel, contoh https://portal.voltake.com'],
   ['notify_emails', '', 'Emel HR / PSS untuk laporan Isnin (pisah dengan koma)'],
   ['amaran_hari', '60', 'Tamat dalam N hari dikira "hampir tamat" (sistem lama: lalai 60; pilihan 30/60/90)'],
   ['peringatan_staf', 'TRUE', 'TRUE = staf yang sijilnya tamat / tamat dalam 30 hari diemel setiap Isnin'],

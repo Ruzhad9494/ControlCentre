@@ -46,7 +46,7 @@ var VOLTAGES = ['LV', 'MV'];
 var MAX_IMAGES = 30;
 
 var SETTINGS_SEED = [
-  ['portal_url', '', 'Alamat portal, contoh https://cc.voltake.com (pautan klien = <portal_url>/public/gwr-sign/?t=...)'],
+  ['portal_url', '', 'Alamat portal, contoh https://portal.voltake.com (pautan klien = <portal_url>/public/gwr-sign/?t=...)'],
   ['pautan_luput_hari', '7', 'Pautan tandatangan klien luput selepas N hari (PRD F-32)'],
   ['emel_cc_OMP', '', 'Emel salinan PDF final GWR OMP (pisah dengan koma), contoh pengurus OMP'],
   ['emel_cc_PSS', '', 'Emel salinan PDF final GWR PSS (pisah dengan koma)'],
