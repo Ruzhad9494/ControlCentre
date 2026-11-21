@@ -106,7 +106,7 @@ Task khusus:
 - [ ] 2F.2 S-34 tandatangan klien: token 32 byte, simpan hash, sekali guna, luput 7 hari (F-32)
 - [ ] 2F.3 Jana PDF draf/final dari template Docs ikut dept; emel (F-34). Dibina: HTML ikut susun atur PDF sistem lama ditukar ke PDF oleh Google (tiada template Docs untuk dijaga), kepala ikut dept dari Settings
 - [ ] 2G.1 ClaimReport untuk Strategic Planning: S-70, S-71; jana PDF + XLSX dari tab Template; soft delete admin (F-70 hingga F-72). Dibina: ubah oleh pembuat hari sama / admin, DO lama diimport, Zip PDF di server
-- [ ] 2H.1 Voltrack S-80 hingga S-82, 5 role (commercial = Commercial; operation = manager PSS & OMP; claim = HR; lod = HR & Account; admin per individu); `ROLE_WRITE_ACCESS` ikut fasa; `gwr_report_ids` (F-80 hingga F-85)
+- [ ] 2H.1 Voltrack S-80 hingga S-82, 5 role (commercial = Commercial; operation = manager PSS & OMP; claim = HR; lod = HR & Account; admin per individu); `ROLE_WRITE_ACCESS` ikut fasa; `gwr_report_ids` (F-80 hingga F-85). Dibina: medan dikira di server + trigger harian, emel tunggakan, import projek terbuka / semua
 
 ### Fasa 3 - Pengerasan & tutup
 - [ ] 3.1 Jalankan semula semua ujian seksyen 6 merentas modul

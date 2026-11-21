@@ -274,6 +274,22 @@ export function setupCrGas({ template = true } = {}) {
   return gas;
 }
 
+export const VT_DIR = path.join(ROOT, 'apps', 'voltrack', 'gas');
+export const VT_SECRET = 'v'.repeat(48);
+
+export function setupVtGas({ settings = {} } = {}) {
+  const gas = loadGas(createGas({
+    props: { SPREADSHEET_ID: 'vt-sheet', ROOT_FOLDER_ID: 'vt-root', ENV: 'prod', MODULE_SECRET: VT_SECRET },
+    spreadsheetName: 'VP-Voltrack',
+  }), VT_DIR);
+  gas.ctx.setupSystem();
+  const sh = gas.spreadsheet.getSheetByName('Settings');
+  const h = sh.header();
+  const want = { portal_url: 'https://cc.example.test', emel_peringatan: 'lod@example.test', ...settings };
+  sh.data.forEach((r, i) => { if (i > 0 && r[0] in want) r[h.indexOf('value')] = want[r[0]]; });
+  return gas;
+}
+
 // PNG 1x1 sah (isi sebenar, supaya semakan magic bytes lulus)
 export const PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==';
 export const PDF_B64 = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF').toString('base64');

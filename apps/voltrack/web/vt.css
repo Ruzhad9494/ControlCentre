@@ -1,0 +1,42 @@
+/* Voltrack - tambahan kecil atas shared/ui/voltake.css */
+.vt-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.vt-stat { display: block; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); color: inherit; text-decoration: none; }
+a.vt-stat:hover { border-color: var(--solar-blue); }
+.vt-stat .label { font-size: 13px; color: var(--muted); }
+.vt-stat .v { font-size: 22px; line-height: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.vt-stat .sub { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.vt-stat.bad { border-left-color: var(--danger); }
+.vt-stat.warn { border-left-color: var(--warning); }
+.vt-stat.ok { border-left-color: var(--success); }
+.vt-grid2 { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.vt-grid2 > * { min-width: 0; }
+.vt-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.vt-bars li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr) 2.5rem; gap: var(--sp-2); align-items: center; font-size: 14px; }
+.vt-bars .track { height: 12px; }
+.vt-bars .bar { display: block; height: 12px; min-width: 2px; background: var(--solar-blue); border-radius: 0 4px 4px 0; }
+.vt-bars .val { text-align: right; font-variant-numeric: tabular-nums; }
+.vt-todo { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vt-todo li { display: flex; gap: var(--sp-2); align-items: flex-start; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--surface); }
+.vt-todo li.urgent { border-left: 4px solid var(--danger); }
+.vt-todo li.warning { border-left: 4px solid var(--warning); }
+.vt-todo .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.vt-todo .caption { display: block; }
+.vt-filters { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.vt-filters > * { min-width: 0; }
+.vt-form { display: grid; gap: var(--sp-3); }
+.vt-fgrid { display: grid; gap: var(--sp-3); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.vt-fgrid > * { min-width: 0; }
+.vt-fgrid .full { grid-column: 1 / -1; }
+@media (max-width: 599px) { .vt-fgrid { grid-template-columns: minmax(0, 1fr); } }
+.vt-sub { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: var(--sp-2) 0 0; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.vt-phase { display: grid; gap: var(--sp-2); }
+.vt-phase .head { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.vt-phase h3 { margin: 0; font-size: 17px; }
+.vt-steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px var(--sp-4); margin: 0; }
+.kv dt { color: var(--muted); font-size: 13px; padding-top: 2px; }
+.kv dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 479px) { .kv { grid-template-columns: 1fr; } .kv dd { margin-bottom: var(--sp-2); } }
+.num { font-variant-numeric: tabular-nums; text-align: right; }
+.vt-id { font-weight: 600; white-space: nowrap; }
+.vt-red { color: var(--danger); font-weight: 600; }

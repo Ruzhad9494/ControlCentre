@@ -312,7 +312,8 @@ Ikut `SCHEMA` Voltrack v2 lama, tanpa tab `Users` (diganti SSO).
 
 - `Commercial`: `id` (`EL-YYYY-NNN`), `company`, `date_request`, `quotation_no`, `quotation_amount`, `status_quotation`, `date_proceed`, `presentation_date`, `job_description`, `remark`, + audit
 - `Operation`: `id`, `mos_ready`, `jsa_ready`, `ptw_ready`, `date_start_job`, `date_completed_job`, `gwr_submitted`, `gwr_date`, `gwr_report_ids` (baru, F-85), `full_report_submitted`, `full_report_date`, `status_job`, `report_pic`, + audit
-- `Claim`: `id`, `invoice_no`, `invoice_date`, `po_no`, `followup_1`, `followup_2`, `followup_3`, `payment_due_date`, `payment_status`, `overdue_days` (dikira server), + audit
+- `Claim`: `id`, `invoice_no`, `invoice_date`, `po_no`, `followup_1`, `followup_2`, `followup_3`, `payment_due_date`, `payment_status`, `overdue_days` (dikira server), `paid_date` (baru, 21/11/2026), + audit
+- Setiap tab fasa juga ada `updated_by_name` (nama staf, dipapar di skrin; emel tidak dipapar). `Settings`: `portal_url`, `emel_peringatan`, `tempoh_bayaran_hari`
 - `LOD`: `id`, `lod_reminder_sent`, `lod_reminder_date`, `lod_issue`, `lod_issue_date`, `ctos_action`, `legal_action`, `case_status`, `case_remark`, + audit
 - `AuditLog`
 

@@ -18,7 +18,7 @@ Reka bentuk penuh dalam [`docs/`](docs/): PRD, TRD, AFD, DBD, BSD, IPD. Pelan pe
 | 2E Draft Mohon Kerja | Kod siap: borang awam `/public/mohon/` (Turnstile, notis privasi), dashboard HR, papan interviewer + markah, retention. Langkah manual: [`docs/setup-fasa2e.md`](docs/setup-fasa2e.md) |
 | 2F GWR | Kod siap: satu modul OMP + PSS ikut GWR v4.2 lama, borang offline, pautan tandatangan klien `/public/gwr-sign/` (sekali guna, luput 7 hari), PDF di server, dashboard. Langkah manual: [`docs/setup-fasa2f.md`](docs/setup-fasa2f.md) |
 | 2G ClaimReport | Kod siap: DO Generator Sungrow ikut sistem lama (No. DO auto, PDF + Excel dari tab Template, alamat tersimpan, Operations Overview, Zip PDF). Langkah manual: [`docs/setup-fasa2g.md`](docs/setup-fasa2g.md) |
-| 2H Voltrack | Belum mula |
+| 2H Voltrack | Kod siap: ikut VoltTrack v2 lama (4 fasa, role tulis ikut fasa, Eksekutif Dashboard, notifikasi tindakan), emel tunggakan harian. Langkah manual: [`docs/setup-fasa2h.md`](docs/setup-fasa2h.md) |
 
 Keputusan pemilik (20/11/2026): mulai Fasa 2A, setiap modul disetup terus ke **production** (tiada Sheet/Apps Script staging). Ujian dibuat dengan data sebenar sebelum modul dibuka kepada semua (`Modules.status = aktif`).
 

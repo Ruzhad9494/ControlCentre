@@ -233,3 +233,37 @@ Sumber: `gcc-voltake/claimreport` (`Appscript/Code.gs`, `form/index.html`, `inde
 | Token template diganti dengan setValues seluruh julat (formula lain jadi nilai) | Hanya sel token diganti; nilai disanitize | Template kekal, elak formula injection |
 | KPI carton = parseInt "12 PCS, 3 BOX" (hanya nombor pertama) | Jumlah semua qty | Betulkan kiraan |
 | Signer ditaip | Lalai nama staf login (boleh diubah) | Kurang menaip |
+
+## Voltrack: lama vs baharu
+
+Sumber: `Ruzhad9494/Voltrack` (VoltTrack v2: `Appscript/Code.gs`, `index.html`), dibaca 21/11/2026.
+
+### Peraturan yang DIBAWA sama
+
+| Sistem lama | Dalam sistem baharu |
+|---|---|
+| 4 tab Commercial, Operation, Claim, LOD dipaut melalui `id` `EL-YYYY-NNN` | Sama |
+| `ROLE_WRITE_ACCESS`: setiap role tulis fasa sendiri, Admin semua, semua role baca semua; multi-role = gabungan | Sama (role `commercial`, `operation`, `claim`, `lod`, `admin`) |
+| Pilihan: quotation Pending/Cancel/Approved; MOS/JSA/PTW Sedia/Belum/N/A; GWR & Full Report Yes/No; bayaran Pending/Paid/Outstanding; CTOS & Legal Pending/Initiated/Completed; kes Open/KIV/Closed | Sama |
+| Approved → tarikh proceed hari ini; GWR / Full Report Yes → tarikh hari ini | Sama |
+| status_job: Pending Start → In Progress → GWR Submitted → Completed Full Report | Sama (+ Cancelled) |
+| Follow up +7/+14/+21, due +30 dari invoice date; lepas due & belum Paid → Outstanding + overdue_days; sasaran LOD reminder due+7, LOD rasmi due+14 | Sama (tempoh bayaran dalam Settings) |
+| Jadual fasa: Operation = Approved, Claim = Full Report Yes, LOD = Outstanding | Sama |
+| Eksekutif Dashboard: jumlah projek, nilai diluluskan, operasi aktif, tertunggak, status quotation, kesihatan pembayaran, notifikasi aktif, ringkasan klien | Sama |
+| Notifikasi tindakan (tetapkan tarikh mula, PTW belum sedia, GWR dihantar, jana invoice, due dalam 7 hari, tertunggak, reminder / LOD rasmi, CTOS > 30 hari) | Sama, ditapis ikut role |
+| Semakan harian tunggakan, senarai kritikal lewat 1 / 7 / 14 / > 30 hari | Sama, dihantar melalui emel |
+
+### Yang DIUBAH (dan kenapa)
+
+| Sistem lama | Kini | Sebab |
+|---|---|---|
+| Tab Users, password hash, OTP lupa password, sesi 12 jam | Login Google + Akses modul | Satu login portal |
+| Role tanpa akses fasa: perubahan diabaikan senyap | Ditolak (403) | Jelas kepada pengguna |
+| Medan dikira di pelayar (boleh diubah) | Dikira dan disimpan di server; trigger harian kemas kini Sheet | Data Sheet sentiasa tepat |
+| "Tarikh sebenar" reminder / LOD diisi sendiri bila sasaran lepas | Tidak diisi sendiri | Surat yang belum dihantar tak tercatat sebagai dihantar |
+| ID baru = bilangan projek + 1 | Nombor terbesar tahun ini + 1 | Elak ID bertindih |
+| Push OneSignal ikut role (kunci REST pernah terdedah) | Emel harian ke `emel_peringatan`; push = F-07 (Tambahan Fasa 3) | Kunci tidak lagi diperlukan |
+| Data ledger penghutang dalam kod (`DEBTOR_LEDGER_IMPORT`) | Tidak dibawa ke repo; import dari tab Sheet | Data penghutang bukan dalam kod |
+| Padam projek: tiada | Admin sahaja, padam lembut dengan sebab | Jejak audit |
+| Tiada rekod siapa ubah fasa | Nama & masa kemas kini setiap fasa + AuditLog | Akauntabiliti |
+| - | `paid_date` (tarikh Paid), `gwr_report_ids` (ID report GWR, F-85) | Laporan & pautan silang |
