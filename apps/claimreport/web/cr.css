@@ -1,0 +1,49 @@
+/* ClaimReport / DO Generator - tambahan kecil atas shared/ui/voltake.css */
+.cr-stats { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.cr-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); }
+.cr-stat .label { font-size: 13px; color: var(--muted); }
+.cr-stat .v { font-size: 22px; line-height: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cr-filters { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: end; }
+.cr-filters .field { margin: 0; min-width: 140px; flex: 1 1 140px; }
+.cr-charts { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.cr-charts > * { min-width: 0; }
+.cr-chart h3 { margin: 0 0 var(--sp-2); font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.cr-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cr-bars li { display: grid; grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) 2.5rem; gap: var(--sp-2); align-items: center; font-size: 13px; }
+.cr-bars .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.cr-bars .track { height: 12px; }
+.cr-bars .bar { height: 12px; min-width: 2px; background: var(--solar-blue); border-radius: 0 4px 4px 0; }
+.cr-bars li:hover .bar { filter: brightness(.85); }
+.cr-bars .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+.cr-form { display: grid; gap: var(--sp-4); max-width: 860px; }
+.cr-sec { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--sp-4); display: grid; gap: var(--sp-3); }
+.cr-sec h3 { margin: 0; font-size: 17px; }
+.cr-grid { display: grid; gap: var(--sp-3); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.cr-grid > * { min-width: 0; }
+@media (max-width: 639px) { .cr-grid { grid-template-columns: minmax(0, 1fr); } }
+.cr-row { border: 1px dashed var(--border); border-radius: var(--radius-ctl); padding: var(--sp-3); display: grid; gap: var(--sp-2); }
+.cr-row .tag { font-size: 12px; font-weight: 600; color: var(--muted); }
+.cr-ref { display: grid; gap: var(--sp-2); grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; }
+.cr-item { display: grid; gap: var(--sp-2); grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) 90px 110px auto; align-items: end; }
+.cr-apac { display: grid; gap: var(--sp-2); grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+.cr-ref > *, .cr-item > *, .cr-apac > * { min-width: 0; }
+.cr-ref .field, .cr-item .field, .cr-apac .field { margin: 0; }
+@media (max-width: 639px) {
+  .cr-ref { grid-template-columns: 90px minmax(0, 1fr) auto; }
+  .cr-ref > :nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
+  .cr-item { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .cr-item > :nth-child(1) { grid-column: 1 / -1; grid-row: 1; }
+  .cr-item > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  .cr-item > :nth-child(3) { grid-column: 1; grid-row: 3; }
+  .cr-item > :nth-child(4) { grid-column: 2; grid-row: 3; }
+  .cr-item > :nth-child(5) { grid-column: 3; grid-row: 3; }
+}
+.cr-preview { background: var(--mist); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: var(--sp-2) var(--sp-3); font-family: ui-monospace, monospace; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cr-done { text-align: center; padding: var(--sp-6) var(--sp-4); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px var(--sp-4); margin: 0; }
+.kv dt { color: var(--muted); font-size: 13px; padding-top: 2px; }
+.kv dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 479px) { .kv { grid-template-columns: 1fr; } .kv dd { margin-bottom: var(--sp-2); } }
+.num { font-variant-numeric: tabular-nums; text-align: right; }
+.pager { display: flex; gap: var(--sp-2); align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.cell-do { font-weight: 600; overflow-wrap: anywhere; }

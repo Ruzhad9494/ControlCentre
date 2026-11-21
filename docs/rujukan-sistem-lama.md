@@ -200,3 +200,36 @@ Sumber: `voltake-energy/gwrompnew` dan `Ruzhad9494/gwrpss` (GWR v4.2: `Appscript
 | Report Pending diubah tanpa kesan | Ubah = kembali Draf, pautan lama mati | Klien tak sign versi lama |
 | Tiada emel selepas lulus | PDF final dihantar ke klien, staf dan `emel_cc_<dept>` | PRD F-34 |
 | Tiada pembatalan | Manager batalkan dengan sebab (rekod disimpan) | Jejak audit |
+
+## ClaimReport (DO Generator): lama vs baharu
+
+Sumber: `gcc-voltake/claimreport` (`Appscript/Code.gs`, `form/index.html`, `index.html`), dibaca 21/11/2026. Walaupun bernama ClaimReport, sistem ini menjana **Delivery Order Sungrow**.
+
+### Peraturan yang DIBAWA sama
+
+| Sistem lama | Dalam sistem baharu |
+|---|---|
+| Rujukan berbilang: jenis RW / RC + No + No MA (pilihan); APAC ticket berbilang (pilihan) | Sama |
+| No. DO = `<RW\|RC><no>[_MA<no>]_JD` (normalizePart: huruf besar, prefix ditambah sendiri), semua No. DO dalam sel `{{DO_NO}}` satu baris setiap rujukan | Sama (akhiran `_JD` dalam Settings) |
+| Nama fail `<No>. <DO No utama>`, No = max + 1 | Sama (DO lama diimport supaya nombor bersambung) |
+| DO No utama mesti unik | Sama |
+| Total carton = jumlah qty ikut unit, susunan unit muncul ("2 PALLET, 10 PCS"); unit PCS, UNIT, SET, BOX, PALLET, KG | Sama |
+| Medan wajib: rujukan, tarikh, From, To, signer, item (code, description, qty > 0, unit) | Sama |
+| Tab Template, item mulai baris 17 (B, C, D, H, I), token `{{...}}`, `{{DATE}}` dd/mm/yyyy, eksport PDF A4 portrait fit width lajur A-J + XLSX | Sama |
+| Preset From JingDong Logistics (lalai) & Koennen Technology + Custom | Sama, kini dalam tab Parties dan To juga disimpan |
+| Dashboard: tapis tarikh, KPI DO / carton / truck / item, ikut tarikh, truck, destinasi, pengirim; senarai dengan carian & halaman | Sama |
+| Senarai PDF "GCC <Month> <Year>", Zip PDFs `GCC <Month> <Year>.zip` | Sama |
+
+### Yang DIUBAH (dan kenapa)
+
+| Sistem lama | Kini | Sebab |
+|---|---|---|
+| Tiada login; URL Apps Script dalam HTML | Login + role `user` / `admin` | PRD F-72 |
+| Dashboard baca CSV "Publish to web" | Data dibaca melalui portal | Data tidak awam |
+| PDF / Excel "anyone with link" | Fail peribadi, dibuka melalui portal | TRD 6 |
+| Delete: sesiapa, baris dipadam terus | Admin sahaja, padam lembut dengan sebab | Tiada rekod hilang tanpa jejak |
+| Edit: belum siap (halaman sementara) | Pembuat (hari sama) atau admin; PDF/Excel dijana semula | BSD 4.2 |
+| Zip melalui corsproxy.io (pihak ketiga) | Dizip di server | Fail tak melalui pihak ketiga |
+| Token template diganti dengan setValues seluruh julat (formula lain jadi nilai) | Hanya sel token diganti; nilai disanitize | Template kekal, elak formula injection |
+| KPI carton = parseInt "12 PCS, 3 BOX" (hanya nombor pertama) | Jumlah semua qty | Betulkan kiraan |
+| Signer ditaip | Lalai nama staf login (boleh diubah) | Kurang menaip |

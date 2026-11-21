@@ -43,6 +43,10 @@ class MockRange {
     });
     return this;
   }
+  setValue(v) { return this.setValues([[v]]); }
+  getValue() { return this.getValues()[0][0]; }
+  /** Salin nilai ke julat lain (template baris item). */
+  copyTo(dest) { dest.setValues(this.getValues().slice(0, dest.nr).map((l) => l.slice(0, dest.nc))); return this; }
   setFontWeight() { return this; }
   setNumberFormat(f) { this.sheet.formats.push({ col: this.col, row: this.row, f }); return this; }
   setBackground() { return this; }
@@ -80,6 +84,12 @@ class MockSheet {
     return new MockRange(this, row, col, nr, nc);
   }
   setFrozenRows(n) { this.frozen = n; }
+  setName(n) { this.name = n; return this; }
+  getSheetId() { return this.sheetId || (this.sheetId = 1000 + Math.floor(Math.random() * 1e6)); }
+  getMaxColumns() { return Math.max(this.getLastColumn(), 10); }
+  getDataRange() { return this.getRange(1, 1, Math.max(this.getLastRow(), 1), Math.max(this.getLastColumn(), 1)); }
+  insertRowsAfter(row, n) { this.data.splice(row, 0, ...Array.from({ length: n }, () => [])); }
+  copyTo(ss) { const c = new MockSheet('Copy of ' + this.name); c.data = this.data.map((l) => (l ? l.slice() : [])); ss.sheets.set(c.name, c); return c; }
   deleteRow(n) { this.data.splice(n - 1, 1); }
   appendRow(line) { this.data[this.getLastRow()] = Array.from(line); return this; }
   header() { return (this.data[0] || []).slice(0, this.getLastColumn()); }
@@ -90,8 +100,10 @@ class MockSheet {
 }
 
 class MockSpreadsheet {
-  constructor(name) { this.name = name; this.sheets = new Map(); }
+  constructor(name, id) { this.name = name; this.id = id || 'ss-' + name; this.sheets = new Map(); }
   getName() { return this.name; }
+  getId() { return this.id; }
+  deleteSheet(sh) { this.sheets.delete(sh.name); }
   getSheetByName(n) { return this.sheets.get(n) || null; }
   insertSheet(n) {
     if (this.sheets.has(n)) throw new Error('Sheet wujud: ' + n);
@@ -142,7 +154,8 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
   const logs = [];
   const cacheStore = new Map();
   const counters = { openById: 0 };
-  const drive = { seq: 0, byId: new Map(), files: new Map() };
+  const drive = { seq: 0, byId: new Map(), files: new Map(), temps: new Map() };
+  const fetches = [];
   let lockHeld = false;
 
   const ctx = {
@@ -160,6 +173,15 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
         if (id !== store.SPREADSHEET_ID) throw new Error('Spreadsheet tak dijumpai: ' + id);
         return spreadsheet;
       },
+      // Spreadsheet sementara (DO ClaimReport): didaftar sebagai fail Drive supaya boleh dibuang ke Trash
+      create: (name) => {
+        const ss = new MockSpreadsheet(name, 'tmp-' + (++drive.seq));
+        ss.insertSheet('Sheet1');
+        drive.temps.set(ss.id, ss);
+        drive.files.set(ss.id, new MockFile(ss.id, new MockBlob('', 'application/vnd.google-apps.spreadsheet', name)));
+        return ss;
+      },
+      flush: () => {},
       newDataValidation: () => {
         const rule = {};
         const b = {
@@ -181,7 +203,21 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
         return drive.files.get(id);
       },
     },
+    // Eksport Sheets (ClaimReport): "PDF"/"XLSX" ujian = JSON isi tab yang dieksport, supaya ujian boleh semak
+    UrlFetchApp: {
+      fetch: (url, opt) => {
+        fetches.push({ url, opt });
+        const m = /spreadsheets\/d\/([^/]+)\/export\?format=(pdf|xlsx)(?:&gid=(\d+))?/.exec(url);
+        if (!m || !drive.temps.has(m[1])) throw new Error('UrlFetch tak dijangka: ' + url);
+        const ss = drive.temps.get(m[1]);
+        const sh = [...ss.sheets.values()].find((x) => !m[3] || String(x.sheetId) === m[3]);
+        const mime = m[2] === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        const text = (m[2] === 'pdf' ? '%PDF-1.4 MOCK\n' : 'PK-MOCK\n') + JSON.stringify({ sheet: sh.name, data: sh.data });
+        return { getBlob: () => new MockBlob(text, mime, 'export'), getResponseCode: () => 200 };
+      },
+    },
     ScriptApp: {
+      getOAuthToken: () => 'token-ujian',
       getProjectTriggers: () => triggers.map((t) => ({ getHandlerFunction: () => t.handler })),
       WeekDay: { MONDAY: 'MONDAY', TUESDAY: 'TUESDAY', WEDNESDAY: 'WEDNESDAY', THURSDAY: 'THURSDAY', FRIDAY: 'FRIDAY', SATURDAY: 'SATURDAY', SUNDAY: 'SUNDAY' },
       newTrigger: (handler) => {
@@ -205,6 +241,7 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
       computeDigest: (alg, text) => toJavaBytes(nodeCrypto.createHash(alg).update(String(text), 'utf8').digest()),
       newBlob: (bytes, mime, name) => new MockBlob(bytes, mime, name),
       getUuid: () => nodeCrypto.randomUUID(),
+      zip: (blobs, name) => new MockBlob('PK-ZIP\n' + JSON.stringify(blobs.map((b) => b.name)), 'application/zip', name),
       base64Decode: (str) => toJavaBytes(Buffer.from(String(str), 'base64')),
       base64Encode: (bytes) => fromJava(bytes).toString('base64'),
       computeHmacSha256Signature: (value, key) =>
@@ -230,7 +267,7 @@ function createGas({ props = {}, spreadsheetName = 'VP-STG-Access', userEmail = 
     MailApp: { sendEmail: (m) => mails.push(m) },
   };
   vm.createContext(ctx);
-  return { ctx, store, spreadsheet, triggers, mails, logs, cacheStore, counters, drive };
+  return { ctx, store, spreadsheet, triggers, mails, logs, cacheStore, counters, drive, fetches };
 }
 
 function loadGas(gas, dir) {

@@ -464,7 +464,7 @@ Keputusan muktamad perlukan Q-04. Cadangan: **mula bersih 2027, bawa master data
 | ams | Semua aset aktif + kalibrasi terkini | Log audit lama (arkib) | Import `MASTERLIST` ke `Assets`, petakan lajur: No→asset_no, Category→kategori, Make, Model, Serial No, Location→lokasi, Expired Date→calib_expiry |
 | claimpro | Tuntutan belum `Dibayar` (**belum dibina**: perlu struktur Sheet lama, dibuat selepas Fasa 2B live) | Tuntutan dibayar (kekal dalam Sheet lama) | Petakan "ID Tuntutan"→claim_id (prefix `OLD-`), "Nama Pekerja"→staff_email (melalui jadual nama ke email) |
 | compliance | Semua kenderaan, chargeman, sijil aktif | Baris dipadam | Tukar format lebar `cert` ke format panjang `StaffCerts` |
-| claimreport | Senarai `Parties` (alamat unik) | DO lama (kekal) | Ekstrak from/to unik |
+| claimreport | Senarai `Parties` (preset From lama) + **semua DO lama** (dilaksana 21/11/2026: supaya nombor DO bersambung & semakan pendua) | - | `importOldData` dari tab `IMPORT_DATABASE` (lajur A-X `logToDatabase` lama) |
 | voltrack | Projek belum tutup (semua 4 tab) | Projek tutup | Salin baris ikut `id`; buang tab Users |
 
 Langkah setiap migrasi: (1) salin Sheet lama ke folder arkib, (2) jalankan skrip di staging, (3) bandingkan kiraan baris + 10 sampel rawak, (4) jalankan di production, (5) kunci Sheet lama (Protect range / tukar kepada view-only), (6) catat dalam AuditLog.

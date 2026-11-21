@@ -245,6 +245,35 @@ export function setupGwrGas({ settings = {} } = {}) {
   return gas;
 }
 
+export const CR_DIR = path.join(ROOT, 'apps', 'claimreport', 'gas');
+export const CR_SECRET = 'r'.repeat(48);
+
+/** Tab Template ujian: token di tempat yang sama seperti DO SUNGROW lama (item mulai baris 17). */
+export function addCrTemplate(gas) {
+  const sh = gas.spreadsheet.insertSheet('Template');
+  const put = (r, c, v) => { sh.data[r - 1] = sh.data[r - 1] || []; sh.data[r - 1][c - 1] = v; };
+  put(1, 2, 'DELIVERY ORDER');
+  put(3, 2, 'DO NO:'); put(3, 3, '{{DO_NO}}'); put(3, 8, 'DATE:'); put(3, 9, '{{DATE}}');
+  put(4, 2, 'APAC:'); put(4, 3, '{{APAC_TICKET}}');
+  put(6, 2, '{{FROM_NAME}}'); put(7, 2, '{{FROM_ADDRESS}}'); put(8, 2, '{{FROM_ATTN}}'); put(9, 2, '{{FROM_TEL}}');
+  put(6, 6, '{{TO_NAME}}'); put(7, 6, '{{TO_ADDRESS}}'); put(8, 6, '{{TO_ATTN}}'); put(9, 6, '{{TO_TEL}}');
+  put(16, 2, 'ITEM'); put(16, 3, 'PRODUCT CODE'); put(16, 4, 'DESCRIPTION'); put(16, 8, 'QTY'); put(16, 9, 'UNIT');
+  put(17, 1, ''); put(17, 10, '=H17');
+  put(19, 2, 'TOTAL:'); put(19, 3, '{{TOTAL_CARTON}}'); put(20, 2, 'TRUCK:'); put(20, 3, '{{TRUCK}}');
+  put(21, 2, 'NOTE:'); put(21, 3, '{{NOTE}}'); put(23, 2, '{{SIGNER}}');
+  return sh;
+}
+
+export function setupCrGas({ template = true } = {}) {
+  const gas = loadGas(createGas({
+    props: { SPREADSHEET_ID: 'cr-sheet', ROOT_FOLDER_ID: 'cr-root', ENV: 'prod', MODULE_SECRET: CR_SECRET },
+    spreadsheetName: 'VP-ClaimReport',
+  }), CR_DIR);
+  gas.ctx.setupSystem();
+  if (template) addCrTemplate(gas);
+  return gas;
+}
+
 // PNG 1x1 sah (isi sebenar, supaya semakan magic bytes lulus)
 export const PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==';
 export const PDF_B64 = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF').toString('base64');
