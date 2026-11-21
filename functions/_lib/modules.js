@@ -30,6 +30,11 @@ export function rolesForModule(moduleId, roles) {
   return [...new Set([...own, ...portal.filter((r) => r === 'superadmin' || r === 'viewer')])];
 }
 
+/** Nama env yang kosong / tiada dalam deployment semasa (nama sahaja, bukan nilai). */
+export function missingEnv(env, mod) {
+  return [mod.url, mod.secret].filter((k) => !env || typeof env[k] !== 'string' || !env[k].trim());
+}
+
 export function isSuperadmin(roles) {
   return ((roles && roles['*']) || []).includes('superadmin');
 }

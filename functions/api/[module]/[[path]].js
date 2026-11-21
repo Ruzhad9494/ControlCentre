@@ -6,8 +6,8 @@
 // 4. Role kasar: sekurang-kurangnya satu role untuk modul
 // 5. Forward bertandatangan HMAC per modul. Role halus + skop data di Apps Script.
 
-import { MODULES, rolesForModule } from '../../_lib/modules.js';
-import { callGas } from '../../_lib/sign.js';
+import { MODULES, missingEnv, rolesForModule } from '../../_lib/modules.js';
+import { callGas, GasError } from '../../_lib/sign.js';
 import { rateLimit } from '../../_lib/cache.js';
 import { assertSameOrigin, requireSession, errorResponse, HttpError } from '../../_lib/guard.js';
 import { json, sha256Hex } from '../../_lib/util.js';
@@ -60,7 +60,9 @@ export async function onRequest(context) {
       roles,
       scope: (access.scope && access.scope[moduleId]) || '',
     };
-    const data = await callGas(env[mod.url], env[mod.secret], action, payload, user);
+    const missing = missingEnv(env, mod);
+    if (missing.length) throw new GasError(503, `Modul belum dikonfigurasi: ${missing.join(', ')} tiada dalam deployment ini (isi di Cloudflare Production, kemudian Retry deployment)`);
+    const data = await callGas(env[mod.url].trim(), env[mod.secret].trim(), action, payload, user);
     return json({ data });
   } catch (e) {
     return errorResponse(e);

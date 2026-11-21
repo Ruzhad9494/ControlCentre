@@ -10,8 +10,8 @@
 // 5. Forward bertandatangan HMAC ke Apps Script modul dengan user { email: 'public', roles: ['public'], ip_hash }.
 //    Apps Script semak semula role 'public' untuk setiap action.
 
-import { MODULES } from '../../_lib/modules.js';
-import { callGas } from '../../_lib/sign.js';
+import { MODULES, missingEnv } from '../../_lib/modules.js';
+import { callGas, GasError } from '../../_lib/sign.js';
 import { rateLimit } from '../../_lib/cache.js';
 import { assertSameOrigin, errorResponse, HttpError } from '../../_lib/guard.js';
 import { json, clientIp, ipHash } from '../../_lib/util.js';
@@ -71,7 +71,9 @@ export async function onRequest(context) {
     }
     const mod = MODULES[moduleId];
     const user = { email: 'public', nama: 'Orang awam', roles: ['public'], ip_hash: ih };
-    const data = await callGas(env[mod.url], env[mod.secret], action, payload, user);
+    const missing = missingEnv(env, mod);
+    if (missing.length) throw new GasError(503, `Modul belum dikonfigurasi: ${missing.join(', ')} tiada dalam deployment ini (isi di Cloudflare Production, kemudian Retry deployment)`);
+    const data = await callGas(env[mod.url].trim(), env[mod.secret].trim(), action, payload, user);
     return json({ data }, 200, { 'Cache-Control': 'no-store' });
   } catch (e) {
     return errorResponse(e);
